@@ -13,7 +13,9 @@ only auto-approve certain users. For example, to auto-approve
 [Dependabot][dependabot] pull requests, use `actor dependabot[bot]` as the args
 for the filter action.
 
-<img src="docs/approve-workflow.png">
+<p align="center">
+  <img src="docs/approve-workflow.png" width="200">
+</p>
 
 [dependabot]: https://github.com/marketplace/dependabot
 
