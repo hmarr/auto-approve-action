@@ -6,6 +6,8 @@ Various GitHub Actions. To use, set the "uses" field to
 
 ## auto-approve
 
+**Requires the `GITHUB_TOKEN` environment variable checkbox to be checked.**
+
 Automatically approve GitHub pull requests. Combine with the filter action to
 only auto-approve certain users.
 
