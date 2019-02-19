@@ -12,6 +12,12 @@ import (
 )
 
 func main() {
+	eventName := os.Getenv("GITHUB_EVENT_NAME")
+	if eventName != "pull_request" {
+		log.Printf("Ignoring event %s (only listens for 'pull_request')", eventName)
+		return
+	}
+
 	ctx := context.Background()
 	client := newClient(ctx)
 
