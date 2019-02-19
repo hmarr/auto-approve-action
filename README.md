@@ -1,6 +1,16 @@
 # GitHub Actions
 
+Various GitHub Actions. To use, set the "uses" field to
+`hmarr/actions/<name>@master`.
+
+
 ## auto-approve
 
 Automatically approve GitHub pull requests. Combine with the filter action to
 only auto-approve certain users.
+
+
+## debug
+
+Prints the environment variables and the event payload. Useful for debugging
+GitHub Actions.
