@@ -1,4 +1,6 @@
-# `auto-approve` GitHub Action
+# Auto Approve GitHub Action
+
+**Name:** `hmarr/auto-approve-action`
 
 **Requires the `GITHUB_TOKEN` environment variable checkbox to be checked.**
 
