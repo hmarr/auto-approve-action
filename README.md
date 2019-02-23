@@ -1,10 +1,4 @@
-# GitHub Actions
-
-Various GitHub Actions. To use, set the "uses" field to
-`hmarr/actions/<name>@master`.
-
-
-## auto-approve
+# `auto-approve` GitHub Action
 
 **Requires the `GITHUB_TOKEN` environment variable checkbox to be checked.**
 
@@ -18,9 +12,3 @@ for the filter action.
 </p>
 
 [dependabot]: https://github.com/marketplace/dependabot
-
-
-## debug
-
-Prints the environment variables and the event payload. Useful for debugging
-GitHub Actions.
