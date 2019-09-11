@@ -13,7 +13,7 @@ jobs:
       run: npm install
 
     - name: Check style with prettier
-      run: prettier --check **/*.ts
+      run: npm run-script format-check
 
     - name: Check build artefact has been checked in
       run: npm run-script build && git diff --quiet
