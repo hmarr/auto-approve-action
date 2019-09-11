@@ -14,10 +14,10 @@ jobs:
         node-version: '12.10.*'
 
     - name: Install dependencies
-      run: npm install
+      run: yarn install
 
     - name: Check style with prettier
-      run: npm run-script format-check
+      run: yarn run format-check
 
     - name: Check build artefact has been checked in
-      run: npm run-script build && git diff
+      run: yarn run build && git diff
