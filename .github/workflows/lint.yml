@@ -9,6 +9,9 @@ jobs:
     - name: Check out code
       uses: actions/checkout@v1
 
+    - name: Install dependencies
+      run: npm install
+
     - name: Check style with prettier
       run: prettier --check **/*.ts
 
