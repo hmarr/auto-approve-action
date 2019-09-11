@@ -24,7 +24,7 @@ jobs:
 ```
 
 
-Combine with the filter action to only auto-approve certain users. For example, to auto-approve [Dependabot][dependabot] pull requests, add the `if` clause in the following example:
+Combine with an `if` clause to only auto-approve certain users. For example, to auto-approve [Dependabot][dependabot] pull requests, use:
 
 ```yaml
     ...
