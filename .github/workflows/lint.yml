@@ -16,4 +16,4 @@ jobs:
       run: npm run-script format-check
 
     - name: Check build artefact has been checked in
-      run: npm run-script build && git diff --quiet
+      run: npm run-script build && git diff
