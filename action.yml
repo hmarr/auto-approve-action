@@ -1,5 +1,8 @@
 name: 'Auto Approve'
 description: 'Automatically approve pull requests'
+branding:
+  icon: 'check-circle'
+  color: 'green'
 inputs:
   github-token:
     description: 'The GITHUB_TOKEN secret'
