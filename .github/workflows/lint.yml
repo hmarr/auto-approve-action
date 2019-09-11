@@ -1,0 +1,16 @@
+name: Lint
+on: [push]
+
+jobs:
+  build:
+    name: Check style
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v1
+
+    - name: Check style with prettier
+      run: prettier --check **/*.ts
+
+    - name: Check build artefact has been checked in
+      run: npm run-script build && git diff --quiet
