@@ -38,6 +38,6 @@ Combine with an `if` clause to only auto-approve certain users. For example, to 
 
 ## Why?
 
-GitHub lets you prevent merges of unapproved pull requests. However, it's occasionally useful to selectively circumvent this restriction - for instance, some people want Dependabot's automated pull requests to not require approval. Combining this action with the filter action lets you automatically approve certain pull requests.
+GitHub lets you prevent merges of unapproved pull requests. However, it's occasionally useful to selectively circumvent this restriction - for instance, some people want Dependabot's automated pull requests to not require approval.
 
 [dependabot]: https://github.com/marketplace/dependabot
