@@ -12,7 +12,7 @@ Create a workflow file (e.g. `.github/workflows/auto-approve.yml`) that contains
 
 ```yaml
 name: Auto approve
-on: [pull_request]
+on: pull_request
 
 jobs:
   build:
