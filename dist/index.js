@@ -4660,7 +4660,7 @@ function issue(name, message = '') {
     issueCommand(name, {}, message);
 }
 exports.issue = issue;
-const CMD_PREFIX = '##[';
+const CMD_STRING = '::';
 class Command {
     constructor(command, properties, message) {
         if (!command) {
@@ -4671,7 +4671,7 @@ class Command {
         this.message = message;
     }
     toString() {
-        let cmdStr = CMD_PREFIX + this.command;
+        let cmdStr = CMD_STRING + this.command;
         if (this.properties && Object.keys(this.properties).length > 0) {
             cmdStr += ' ';
             for (const key in this.properties) {
@@ -4680,12 +4680,12 @@ class Command {
                     if (val) {
                         // safely append the val - avoid blowing up when attempting to
                         // call .replace() if message is not a string for some reason
-                        cmdStr += `${key}=${escape(`${val || ''}`)};`;
+                        cmdStr += `${key}=${escape(`${val || ''}`)},`;
                     }
                 }
             }
         }
-        cmdStr += ']';
+        cmdStr += CMD_STRING;
         // safely append the message - avoid blowing up when attempting to
         // call .replace() if message is not a string for some reason
         const message = `${this.message || ''}`;
@@ -6613,6 +6613,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const command_1 = __webpack_require__(431);
+const os = __webpack_require__(87);
 const path = __webpack_require__(622);
 /**
  * The code to exit an action
@@ -6671,7 +6672,7 @@ exports.addPath = addPath;
  * @returns   string
  */
 function getInput(name, options) {
-    const val = process.env[`INPUT_${name.replace(' ', '_').toUpperCase()}`] || '';
+    const val = process.env[`INPUT_${name.replace(/ /g, '_').toUpperCase()}`] || '';
     if (options && options.required && !val) {
         throw new Error(`Input required and not supplied: ${name}`);
     }
@@ -6728,6 +6729,14 @@ function warning(message) {
     command_1.issue('warning', message);
 }
 exports.warning = warning;
+/**
+ * Writes info to log with console.log.
+ * @param message info message
+ */
+function info(message) {
+    process.stdout.write(message + os.EOL);
+}
+exports.info = info;
 /**
  * Begin an output group.
  *
