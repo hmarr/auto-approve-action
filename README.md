@@ -2,7 +2,7 @@
 
 **Name:** `hmarr/auto-approve-action`
 
-Automatically approve GitHub pull requests. The `GITHUB_TOKEN` secret must be provided as the `github-token` input for the action to work.
+Automatically approve GitHub pull requests. The `GITHUB_TOKEN` secret must be provided as the `github-token` input for the action to work. Optional `merge` input (boolean) allows to merge pull requests immediatly after approval.
 
 **Important:** use v2.0.0 or later, as v1 was designed for the initial GitHub Actions beta, and no longer works.
 
