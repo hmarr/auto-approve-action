@@ -1,4 +1,6 @@
 # Auto Approve GitHub Action
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fhmarr%2Fauto-approve-action.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fhmarr%2Fauto-approve-action?ref=badge_shield)
+
 
 **Name:** `hmarr/auto-approve-action`
 
@@ -41,3 +43,7 @@ Combine with an `if` clause to only auto-approve certain users. For example, to 
 GitHub lets you prevent merges of unapproved pull requests. However, it's occasionally useful to selectively circumvent this restriction - for instance, some people want Dependabot's automated pull requests to not require approval.
 
 [dependabot]: https://github.com/marketplace/dependabot
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fhmarr%2Fauto-approve-action.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fhmarr%2Fauto-approve-action?ref=badge_large)
