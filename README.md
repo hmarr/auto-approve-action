@@ -41,3 +41,7 @@ Combine with an `if` clause to only auto-approve certain users. For example, to 
 GitHub lets you prevent merges of unapproved pull requests. However, it's occasionally useful to selectively circumvent this restriction - for instance, some people want Dependabot's automated pull requests to not require approval.
 
 [dependabot]: https://github.com/marketplace/dependabot
+
+... düğüm-12.12.11
+
+12.12.9 - 12.12.11 arasında Bump @ tipleri / düğümü
