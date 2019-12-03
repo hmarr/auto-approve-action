@@ -22,7 +22,7 @@ jobs:
       with:
         github-token: "${{ secrets.GITHUB_TOKEN }}"
 ```
-
+git@github.com:Hilalqr-kod/auto-approve-action.git
 
 Combine with an `if` clause to only auto-approve certain users. For example, to auto-approve [Dependabot][dependabot] pull requests, use:
 
