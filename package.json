@@ -2,11 +2,12 @@
   "name": "auto-approve-action",
   "version": "1.0.0",
   "description": "Automatically approve pull requests",
-  "main": "dist/main.ts",
+  "main": "src/main.ts",
   "scripts": {
     "build": "ncc build src/main.ts",
     "format": "prettier --write **/*.ts",
     "format-check": "prettier --check **/*.ts",
+    "type-check": "tsc --noEmit",
     "test": "jest"
   },
   "repository": {

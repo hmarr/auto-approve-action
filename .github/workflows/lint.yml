@@ -19,5 +19,8 @@ jobs:
     - name: Check style with prettier
       run: yarn run format-check
 
+    - name: Check types
+      run: yarn run type-check
+
     - name: Check build artefact has been checked in
       run: yarn run build && git diff --quiet
