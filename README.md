@@ -27,13 +27,21 @@ jobs:
 Combine with an `if` clause to only auto-approve certain users. For example, to auto-approve [Dependabot][dependabot] pull requests, use:
 
 ```yaml
-    ...
+name: Auto approve
+
+on:
+  pull_request:
+    branches:
+    - "dependabot/**"
+
+jobs:
+  auto-approve:
+    runs-on: ubuntu-latest
     steps:
     - uses: hmarr/auto-approve-action@v2.0.0
       if: github.actor == 'dependabot[bot]' || github.actor == 'dependabot-preview[bot]'
       with:
         github-token: "${{ secrets.GITHUB_TOKEN }}"
-    ...
 ```
 
 ## Why?
