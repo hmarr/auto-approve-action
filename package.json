@@ -27,7 +27,7 @@
     "@actions/github": "^1.1.0"
   },
   "devDependencies": {
-    "@types/node": "^13.7.1",
+    "@types/node": "^13.7.2",
     "@zeit/ncc": "^0.21.1",
     "prettier": "^1.19.1",
     "typescript": "^3.7.5"
