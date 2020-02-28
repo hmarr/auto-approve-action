@@ -30,9 +30,7 @@ Combine with an `if` clause to only auto-approve certain users. For example, to 
 name: Auto approve
 
 on:
-  pull_request:
-    branches:
-    - "dependabot/**"
+  pull_request
 
 jobs:
   auto-approve:
