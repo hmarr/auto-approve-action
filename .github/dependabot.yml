@@ -1,6 +1,7 @@
 version: 2
 
-update_configs:
-  - package_manager: "javascript"
+updates:
+  - package-ecosystem: "javascript"
     directory: "/"
-    update_schedule: "daily"
+    schedule:
+      interval: "daily"
