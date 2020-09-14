@@ -70,10 +70,10 @@
     once "^1.4.0"
     universal-user-agent "^4.0.0"
 
-"@types/node@^14.0.14":
-  version "14.0.14"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-14.0.14.tgz#24a0b5959f16ac141aeb0c5b3cd7a15b7c64cbce"
-  integrity sha512-syUgf67ZQpaJj01/tRTknkMNoBBLWJOBODF0Zm4NrXmiSuxjymFrxnTu1QVYRubhVkRcZLYZG8STTwJRdVm/WQ==
+"@types/node@^14.10.1":
+  version "14.10.1"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-14.10.1.tgz#cc323bad8e8a533d4822f45ce4e5326f36e42177"
+  integrity sha512-aYNbO+FZ/3KGeQCEkNhHFRIzBOUgc7QvcVNKXbfnhDkSfwUv91JsQQa10rDgKSTSLkXZ1UIyPe4FJJNVgw1xWQ==
 
 "@zeit/ncc@^0.21.1":
   version "0.21.1"
