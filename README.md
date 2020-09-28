@@ -12,7 +12,7 @@ Create a workflow file (e.g. `.github/workflows/auto-approve.yml`) that contains
 
 ```yaml
 name: Auto approve
-on: pull_request
+on: pull_request_target
 
 jobs:
   build:
@@ -30,7 +30,7 @@ Combine with an `if` clause to only auto-approve certain users. For example, to 
 name: Auto approve
 
 on:
-  pull_request
+  pull_request_target
 
 jobs:
   auto-approve:
