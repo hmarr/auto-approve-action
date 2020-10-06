@@ -4,4 +4,4 @@ updates:
   - package-ecosystem: "javascript"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "monthly"
