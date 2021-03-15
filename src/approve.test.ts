@@ -67,6 +67,18 @@ test("when a user tries to approve their own pull request", async () => {
   );
 });
 
+test("when the token doesn't have access to the repository", async () => {
+  nock("https://api.github.com")
+    .post("/repos/hmarr/test/pulls/101/reviews")
+    .reply(404, { message: "Not Found" });
+
+  await approve("gh-tok", ghContext());
+
+  expect(core.setFailed).toHaveBeenCalledWith(
+    expect.stringContaining("doesn't have access")
+  );
+});
+
 function ghContext(): Context {
   const ctx = new Context();
   ctx.payload = {
