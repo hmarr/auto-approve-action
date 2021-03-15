@@ -32,12 +32,14 @@ export async function approve(token: string, context: Context) {
             `${error.message}. Please check that the \`github-token\` input ` +
               `parameter is set correctly.`
           );
+          break;
         case 403:
           core.setFailed(
             `${error.message}. In some cases, the GitHub token used for actions triggered ` +
               `from \`pull_request\` events are read-only, which can cause this problem. ` +
               `Switching to the \`pull_request_target\` event typically resolves this issue.`
           );
+          break;
         default:
           core.setFailed(`Error (code ${error.status}): ${error.message}`);
       }
