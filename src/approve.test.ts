@@ -55,6 +55,18 @@ test("when the token doesn't have write permissions", async () => {
   );
 });
 
+test("when a user tries to approve their own pull request", async () => {
+  nock("https://api.github.com")
+    .post("/repos/hmarr/test/pulls/101/reviews")
+    .reply(422, { message: "Unprocessable Entity" });
+
+  await approve("gh-tok", ghContext());
+
+  expect(core.setFailed).toHaveBeenCalledWith(
+    expect.stringContaining("same user account")
+  );
+});
+
 function ghContext(): Context {
   const ctx = new Context();
   ctx.payload = {
