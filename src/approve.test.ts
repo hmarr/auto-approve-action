@@ -1,20 +1,66 @@
 import * as core from "@actions/core";
-import { WebhookPayload } from "@actions/github/lib/interfaces";
+import { Context } from "@actions/github/lib/context";
+import nock from "nock";
 import { approve } from "./approve";
 
 beforeEach(() => {
   jest.restoreAllMocks();
+  jest.spyOn(core, "setFailed").mockImplementation(jest.fn());
+  jest.spyOn(core, "info").mockImplementation(jest.fn());
 
   process.env["GITHUB_REPOSITORY"] = "hmarr/test";
 });
 
-test("without a pull request", async () => {
-  const spy = jest.spyOn(core, "setFailed");
+test("when a review is successfully created", async () => {
+  nock("https://api.github.com")
+    .post("/repos/hmarr/test/pulls/101/reviews")
+    .reply(200, { id: 1 });
 
-  const payload: WebhookPayload = {};
-  await approve("gh-tok", payload);
+  await approve("gh-tok", ghContext());
 
-  expect(spy).toHaveBeenCalledWith(
-    expect.stringContaining("missing `pull_request`")
+  expect(core.info).toHaveBeenCalledWith(
+    expect.stringContaining("Approved pull request #101")
   );
 });
+
+test("without a pull request", async () => {
+  await approve("gh-tok", new Context());
+
+  expect(core.setFailed).toHaveBeenCalledWith(
+    expect.stringContaining("Make sure you're triggering this")
+  );
+});
+
+test("when the token is invalid", async () => {
+  nock("https://api.github.com")
+    .post("/repos/hmarr/test/pulls/101/reviews")
+    .reply(401, { message: "Bad credentials" });
+
+  await approve("gh-tok", ghContext());
+
+  expect(core.setFailed).toHaveBeenCalledWith(
+    expect.stringContaining("`github-token` input parameter")
+  );
+});
+
+test("when the token doesn't have write permissions", async () => {
+  nock("https://api.github.com")
+    .post("/repos/hmarr/test/pulls/101/reviews")
+    .reply(403, { message: "Resource not accessible by integration" });
+
+  await approve("gh-tok", ghContext());
+
+  expect(core.setFailed).toHaveBeenCalledWith(
+    expect.stringContaining("pull_request_target")
+  );
+});
+
+function ghContext(): Context {
+  const ctx = new Context();
+  ctx.payload = {
+    pull_request: {
+      number: 101,
+    },
+  };
+  return ctx;
+}
