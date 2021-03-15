@@ -7,17 +7,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Check out code
-      uses: actions/checkout@v1
+      uses: actions/checkout@v2
 
-    - uses: actions/setup-node@v1
+    - name: Setup nodejs
+      uses: actions/setup-node@v2
       with:
-        node-version: '12.10.*'
+        node-version: '14'
 
     - name: Install dependencies
-      run: yarn install
+      run: npm ci
 
     - name: Check style with prettier
-      run: yarn run format-check
+      run: npm run format-check
 
     - name: Check build artefact has been checked in
-      run: yarn run build && git diff --quiet
+      run: npm run build && git diff --quiet
