@@ -5966,7 +5966,7 @@ const approve_1 = __nccwpck_require__(609);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const token = core.getInput("github-token", { required: true });
-        const prNumber = parseInt(core.getInput("pull-request-number"));
+        const prNumber = parseInt(core.getInput("pull-request-number"), 10);
         if (Number.isNaN(prNumber)) {
             yield approve_1.approve(token, github.context, prNumber);
         }
