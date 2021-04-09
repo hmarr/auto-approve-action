@@ -6,13 +6,13 @@ import { Context } from "@actions/github/lib/context";
 export async function approve(
   token: string,
   context: Context,
-  pr_number: number
+  prNumber?: number
 ) {
-  if (!pr_number) {
-    pr_number = context?.payload?.pull_request?.number || 0;
+  if (!prNumber) {
+    prNumber = context.payload.pull_request?.number;
   }
 
-  if (!pr_number) {
+  if (!prNumber) {
     core.setFailed(
       "Event payload missing `pull_request` key, and no `pull-request-number` provided as input." +
         "Make sure you're triggering this action on the `pull_request` or `pull_request_target` events."
@@ -22,15 +22,15 @@ export async function approve(
 
   const client = github.getOctokit(token);
 
-  core.info(`Creating approving review for pull request #${pr_number}`);
+  core.info(`Creating approving review for pull request #${prNumber}`);
   try {
     await client.pulls.createReview({
       owner: context.repo.owner,
       repo: context.repo.repo,
-      pull_number: pr_number,
+      pull_number: prNumber,
       event: "APPROVE",
     });
-    core.info(`Approved pull request #${pr_number}`);
+    core.info(`Approved pull request #${prNumber}`);
   } catch (error) {
     if (error instanceof RequestError) {
       switch (error.status) {
