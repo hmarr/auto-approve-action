@@ -1,4 +1,4 @@
-name: Lint
+name: CI
 on: [push, pull_request]
 
 jobs:
@@ -19,6 +19,9 @@ jobs:
 
     - name: Check style with prettier
       run: npm run format-check
+
+    - name: Run tests
+      run: npm test
 
     - name: Check build artefact has been checked in
       run: npm run build && git diff --quiet
