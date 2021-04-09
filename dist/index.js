@@ -5866,24 +5866,27 @@ exports.approve = void 0;
 const core = __importStar(__nccwpck_require__(186));
 const github = __importStar(__nccwpck_require__(438));
 const request_error_1 = __nccwpck_require__(537);
-function approve(token, context) {
+function approve(token, context, pr_number) {
+    var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
-        const { pull_request: pr } = context.payload;
-        if (!pr) {
-            core.setFailed("Event payload missing `pull_request` key. Make sure you're " +
-                "triggering this action on the `pull_request` or `pull_request_target` events.");
+        if (!pr_number) {
+            pr_number = ((_b = (_a = context === null || context === void 0 ? void 0 : context.payload) === null || _a === void 0 ? void 0 : _a.pull_request) === null || _b === void 0 ? void 0 : _b.number) || 0;
+        }
+        if (!pr_number) {
+            core.setFailed("Event payload missing `pull_request` key, and no `pull-request-number` provided as input." +
+                "Make sure you're triggering this action on the `pull_request` or `pull_request_target` events.");
             return;
         }
         const client = github.getOctokit(token);
-        core.info(`Creating approving review for pull request #${pr.number}`);
+        core.info(`Creating approving review for pull request #${pr_number}`);
         try {
             yield client.pulls.createReview({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                pull_number: pr.number,
+                pull_number: pr_number,
                 event: "APPROVE",
             });
-            core.info(`Approved pull request #${pr.number}`);
+            core.info(`Approved pull request #${pr_number}`);
         }
         catch (error) {
             if (error instanceof request_error_1.RequestError) {
@@ -5963,7 +5966,8 @@ const approve_1 = __nccwpck_require__(609);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const token = core.getInput("github-token", { required: true });
-        yield approve_1.approve(token, github.context);
+        const pr_number = JSON.parse(core.getInput("pull-request-number") || "0");
+        yield approve_1.approve(token, github.context, pr_number);
     });
 }
 run();
