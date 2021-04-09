@@ -42,6 +42,24 @@ jobs:
         github-token: "${{ secrets.GITHUB_TOKEN }}"
 ```
 
+If you want to use this action from a workflow file that doesn't run on the `pull_request` or `pull_request_target` events, use the `pull-request-number` input:
+
+```yaml
+name: Auto approve
+
+on:
+  workflow_dispatch
+
+jobs:
+  auto-approve:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: hmarr/auto-approve-action@v2
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        pull-request-number: 1234
+```
+
 ## Why?
 
 GitHub lets you prevent merges of unapproved pull requests. However, it's occasionally useful to selectively circumvent this restriction - for instance, some people want Dependabot's automated pull requests to not require approval.
