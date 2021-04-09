@@ -48,7 +48,10 @@ If you want to use this action from a workflow file that doesn't run on the `pul
 name: Auto approve
 
 on:
-  workflow_dispatch
+  workflow_dispatch:
+    inputs: pullRequestNumber
+      description: Pull request number to auto-approve
+      required: false
 
 jobs:
   auto-approve:
@@ -57,7 +60,7 @@ jobs:
     - uses: hmarr/auto-approve-action@v2
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
-        pull-request-number: 1234
+        pull-request-number: ${{ github.event.inputs.pullRequestNumber }}
 ```
 
 ## Why?
