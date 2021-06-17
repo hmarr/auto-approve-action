@@ -5866,24 +5866,27 @@ exports.approve = void 0;
 const core = __importStar(__nccwpck_require__(186));
 const github = __importStar(__nccwpck_require__(438));
 const request_error_1 = __nccwpck_require__(537);
-function approve(token, context) {
+function approve(token, context, prNumber) {
+    var _a;
     return __awaiter(this, void 0, void 0, function* () {
-        const { pull_request: pr } = context.payload;
-        if (!pr) {
-            core.setFailed("Event payload missing `pull_request` key. Make sure you're " +
-                "triggering this action on the `pull_request` or `pull_request_target` events.");
+        if (!prNumber) {
+            prNumber = (_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
+        }
+        if (!prNumber) {
+            core.setFailed("Event payload missing `pull_request` key, and no `pull-request-number` provided as input." +
+                "Make sure you're triggering this action on the `pull_request` or `pull_request_target` events.");
             return;
         }
         const client = github.getOctokit(token);
-        core.info(`Creating approving review for pull request #${pr.number}`);
+        core.info(`Creating approving review for pull request #${prNumber}`);
         try {
             yield client.pulls.createReview({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                pull_number: pr.number,
+                pull_number: prNumber,
                 event: "APPROVE",
             });
-            core.info(`Approved pull request #${pr.number}`);
+            core.info(`Approved pull request #${prNumber}`);
         }
         catch (error) {
             if (error instanceof request_error_1.RequestError) {
@@ -5963,7 +5966,13 @@ const approve_1 = __nccwpck_require__(609);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const token = core.getInput("github-token", { required: true });
-        yield approve_1.approve(token, github.context);
+        const prNumber = parseInt(core.getInput("pull-request-number"), 10);
+        if (!Number.isNaN(prNumber)) {
+            yield approve_1.approve(token, github.context, prNumber);
+        }
+        else {
+            yield approve_1.approve(token, github.context);
+        }
     });
 }
 run();

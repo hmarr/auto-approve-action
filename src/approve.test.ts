@@ -23,6 +23,18 @@ test("when a review is successfully created", async () => {
   );
 });
 
+test("when a review is successfully created using pull-request-number", async () => {
+  nock("https://api.github.com")
+    .post("/repos/hmarr/test/pulls/101/reviews")
+    .reply(200, { id: 1 });
+
+  await approve("gh-tok", new Context(), 101);
+
+  expect(core.info).toHaveBeenCalledWith(
+    expect.stringContaining("Approved pull request #101")
+  );
+});
+
 test("without a pull request", async () => {
   await approve("gh-tok", new Context());
 
