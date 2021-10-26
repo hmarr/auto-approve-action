@@ -6,7 +6,8 @@ branding:
 inputs:
   github-token:
     description: 'The GITHUB_TOKEN secret'
-    required: true
+    default: ${{ github.token }}
+    required: false
   pull-request-number:
     description: '(optional) The ID of a pull request to auto-approve. By default, this action tries to use the pull_request event payload.'
     required: false
