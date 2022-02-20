@@ -2,6 +2,7 @@ import * as core from "@actions/core";
 import * as github from "@actions/github";
 import { RequestError } from "@octokit/request-error";
 import { Context } from "@actions/github/lib/context";
+import { userInfo } from "os";
 
 export async function approve(
   token: string,
@@ -22,8 +23,46 @@ export async function approve(
 
   const client = github.getOctokit(token);
 
-  core.info(`Creating approving review for pull request #${prNumber}`);
   try {
+    core.info(`Getting current user info`);
+    const { data: user } = await client.users.getAuthenticated();
+    core.info(`Current user is ${user.login}`);
+
+    core.info(`Getting pull request #${prNumber} info`);
+    const pull_request = await client.pulls.get({
+      owner: context.repo.owner,
+      repo: context.repo.repo,
+      pull_number: prNumber,
+    });
+    const commit = pull_request.data.head.sha;
+
+    core.info(`Commit SHA is ${commit}`);
+
+    core.info(
+      `Getting reviews for pull request #${prNumber} and commit ${commit}`
+    );
+    const reviews = await client.pulls.listReviews({
+      owner: context.repo.owner,
+      repo: context.repo.repo,
+      pull_number: prNumber,
+    });
+
+    for (const review of reviews.data) {
+      if (
+        review.user?.login == user.login &&
+        review.commit_id == commit &&
+        review.state == "APPROVED"
+      ) {
+        core.info(
+          `Current user already approved pull request #${prNumber}, nothing to do`
+        );
+        return;
+      }
+    }
+
+    core.info(
+      `Pull request #${prNumber} has not been approved yet, creating approving review`
+    );
     await client.pulls.createReview({
       owner: context.repo.owner,
       repo: context.repo.repo,
@@ -67,7 +106,6 @@ export async function approve(
       }
       return;
     }
-
     core.setFailed(error.message);
     return;
   }
