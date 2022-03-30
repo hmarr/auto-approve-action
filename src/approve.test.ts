@@ -43,21 +43,21 @@ test("when a review is successfully created using pull-request-number", async ()
   nock("https://api.github.com").get("/user").reply(200, { login: "hmarr" });
 
   nock("https://api.github.com")
-    .get("/repos/hmarr/test/pulls/101")
+    .get("/repos/hmarr/test/pulls/102")
     .reply(200, { head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" } });
 
   nock("https://api.github.com")
-    .get("/repos/hmarr/test/pulls/101/reviews")
+    .get("/repos/hmarr/test/pulls/102/reviews")
     .reply(200, []);
 
   nock("https://api.github.com")
-    .post("/repos/hmarr/test/pulls/101/reviews")
+    .post("/repos/hmarr/test/pulls/102/reviews")
     .reply(200, { id: 1 });
 
-  await approve("gh-tok", new Context(), 101);
+  await approve("gh-tok", new Context(), 102);
 
   expect(core.info).toHaveBeenCalledWith(
-    expect.stringContaining("Approved pull request #101")
+    expect.stringContaining("Approved pull request #102")
   );
 });
 
