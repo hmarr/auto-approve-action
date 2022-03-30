@@ -7,8 +7,13 @@ beforeEach(() => {
   jest.restoreAllMocks();
   jest.spyOn(core, "setFailed").mockImplementation(jest.fn());
   jest.spyOn(core, "info").mockImplementation(jest.fn());
+  nock.disableNetConnect();
 
   process.env["GITHUB_REPOSITORY"] = "hmarr/test";
+});
+
+afterEach(() => {
+  nock.enableNetConnect();
 });
 
 test("when a review is successfully created", async () => {
