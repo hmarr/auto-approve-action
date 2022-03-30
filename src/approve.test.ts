@@ -13,6 +13,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  nock.cleanAll();
   nock.enableNetConnect();
 });
 
