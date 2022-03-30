@@ -2,7 +2,6 @@ import * as core from "@actions/core";
 import * as github from "@actions/github";
 import { RequestError } from "@octokit/request-error";
 import { Context } from "@actions/github/lib/context";
-import { userInfo } from "os";
 
 export async function approve(
   token: string,
