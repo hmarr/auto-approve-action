@@ -8474,13 +8474,23 @@ const github = __importStar(__nccwpck_require__(5438));
 const approve_1 = __nccwpck_require__(6609);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
-        const token = core.getInput("github-token", { required: true });
-        const prNumber = parseInt(core.getInput("pull-request-number"), 10);
-        if (!Number.isNaN(prNumber)) {
-            yield (0, approve_1.approve)(token, github.context, prNumber);
+        try {
+            const token = core.getInput("github-token", { required: true });
+            const prNumber = parseInt(core.getInput("pull-request-number"), 10);
+            if (!Number.isNaN(prNumber)) {
+                yield (0, approve_1.approve)(token, github.context, prNumber);
+            }
+            else {
+                yield (0, approve_1.approve)(token, github.context);
+            }
         }
-        else {
-            yield (0, approve_1.approve)(token, github.context);
+        catch (error) {
+            if (error instanceof Error) {
+                core.setFailed(error.message);
+            }
+            else {
+                core.setFailed("Unknown error");
+            }
         }
     });
 }
