@@ -3,18 +3,21 @@ import { Context } from "@actions/github/lib/context";
 import nock from "nock";
 import { approve } from "./approve";
 
+const originalEnv = process.env;
+
 beforeEach(() => {
   jest.restoreAllMocks();
   jest.spyOn(core, "setFailed").mockImplementation(jest.fn());
   jest.spyOn(core, "info").mockImplementation(jest.fn());
   nock.disableNetConnect();
 
-  process.env["GITHUB_REPOSITORY"] = "hmarr/test";
+  process.env = { GITHUB_REPOSITORY: "hmarr/test" };
 });
 
 afterEach(() => {
   nock.cleanAll();
   nock.enableNetConnect();
+  process.env = originalEnv;
 });
 
 test("when a review is successfully created", async () => {
