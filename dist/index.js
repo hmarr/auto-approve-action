@@ -5867,7 +5867,7 @@ const core = __importStar(__nccwpck_require__(186));
 const github = __importStar(__nccwpck_require__(438));
 const request_error_1 = __nccwpck_require__(537);
 function approve(token, context, prNumber) {
-    var _a;
+    var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
         if (!prNumber) {
             prNumber = (_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
@@ -5878,8 +5878,33 @@ function approve(token, context, prNumber) {
             return;
         }
         const client = github.getOctokit(token);
-        core.info(`Creating approving review for pull request #${prNumber}`);
         try {
+            core.info(`Getting current user info`);
+            const { data: user } = yield client.users.getAuthenticated();
+            core.info(`Current user is ${user.login}`);
+            core.info(`Getting pull request #${prNumber} info`);
+            const pull_request = yield client.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+            });
+            const commit = pull_request.data.head.sha;
+            core.info(`Commit SHA is ${commit}`);
+            core.info(`Getting reviews for pull request #${prNumber} and commit ${commit}`);
+            const reviews = yield client.pulls.listReviews({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+            });
+            for (const review of reviews.data) {
+                if (((_b = review.user) === null || _b === void 0 ? void 0 : _b.login) == user.login &&
+                    review.commit_id == commit &&
+                    review.state == "APPROVED") {
+                    core.info(`Current user already approved pull request #${prNumber}, nothing to do`);
+                    return;
+                }
+            }
+            core.info(`Pull request #${prNumber} has not been approved yet, creating approving review`);
             yield client.pulls.createReview({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
