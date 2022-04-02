@@ -11,5 +11,5 @@ inputs:
     description: '(optional) The ID of a pull request to auto-approve. By default, this action tries to use the pull_request event payload.'
     required: false
 runs:
-  using: 'node12'
+  using: 'node16'
   main: 'dist/index.js'
