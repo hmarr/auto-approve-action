@@ -20,7 +20,7 @@ jobs:
     steps:
     - uses: hmarr/auto-approve-action@v2
       with:
-        github-token: "${{ secrets.GITHUB_TOKEN }}"
+        github-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 
@@ -39,7 +39,7 @@ jobs:
     - uses: hmarr/auto-approve-action@v2
       if: github.actor == 'dependabot[bot]' || github.actor == 'dependabot-preview[bot]'
       with:
-        github-token: "${{ secrets.GITHUB_TOKEN }}"
+        github-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 If you want to use this action from a workflow file that doesn't run on the `pull_request` or `pull_request_target` events, use the `pull-request-number` input:
