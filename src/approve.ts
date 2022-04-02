@@ -24,11 +24,11 @@ export async function approve(
 
   try {
     core.info(`Getting current user info`);
-    const { data: user } = await client.users.getAuthenticated();
+    const { data: user } = await client.rest.users.getAuthenticated();
     core.info(`Current user is ${user.login}`);
 
     core.info(`Getting pull request #${prNumber} info`);
-    const pull_request = await client.pulls.get({
+    const pull_request = await client.rest.pulls.get({
       owner: context.repo.owner,
       repo: context.repo.repo,
       pull_number: prNumber,
@@ -40,7 +40,7 @@ export async function approve(
     core.info(
       `Getting reviews for pull request #${prNumber} and commit ${commit}`
     );
-    const reviews = await client.pulls.listReviews({
+    const reviews = await client.rest.pulls.listReviews({
       owner: context.repo.owner,
       repo: context.repo.repo,
       pull_number: prNumber,
@@ -62,7 +62,7 @@ export async function approve(
     core.info(
       `Pull request #${prNumber} has not been approved yet, creating approving review`
     );
-    await client.pulls.createReview({
+    await client.rest.pulls.createReview({
       owner: context.repo.owner,
       repo: context.repo.repo,
       pull_number: prNumber,
@@ -105,7 +105,12 @@ export async function approve(
       }
       return;
     }
-    core.setFailed(error.message);
+
+    if (error instanceof Error) {
+      core.setFailed(error);
+    } else {
+      core.setFailed("Unknown error");
+    }
     return;
   }
 }
