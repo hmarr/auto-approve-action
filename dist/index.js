@@ -8355,8 +8355,8 @@ function approve(token, context, prNumber) {
         const client = github.getOctokit(token);
         try {
             core.info(`Getting current user info`);
-            const { data: user } = yield client.rest.users.getAuthenticated();
-            core.info(`Current user is ${user.login}`);
+            const login = yield getLoginForToken(client);
+            core.info(`Current user is ${login}`);
             core.info(`Getting pull request #${prNumber} info`);
             const pull_request = yield client.rest.pulls.get({
                 owner: context.repo.owner,
@@ -8372,7 +8372,7 @@ function approve(token, context, prNumber) {
                 pull_number: prNumber,
             });
             for (const review of reviews.data) {
-                if (((_b = review.user) === null || _b === void 0 ? void 0 : _b.login) == user.login &&
+                if (((_b = review.user) === null || _b === void 0 ? void 0 : _b.login) == login &&
                     review.commit_id == commit &&
                     review.state == "APPROVED") {
                     core.info(`Current user already approved pull request #${prNumber}, nothing to do`);
@@ -8427,6 +8427,24 @@ function approve(token, context, prNumber) {
     });
 }
 exports.approve = approve;
+function getLoginForToken(client) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const { data: user } = yield client.rest.users.getAuthenticated();
+            return user.login;
+        }
+        catch (error) {
+            if (error instanceof request_error_1.RequestError) {
+                // If you use the GITHUB_TOKEN provided by GitHub Actions to fetch the current user
+                // you get a 403. For now we'll assume any 403 means this is an Actions token.
+                if (error.status === 403) {
+                    return "github-actions[bot]";
+                }
+            }
+            throw error;
+        }
+    });
+}
 
 
 /***/ }),

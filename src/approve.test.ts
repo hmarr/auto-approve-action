@@ -20,8 +20,30 @@ afterEach(() => {
   process.env = originalEnv;
 });
 
-test("when a review is successfully created", async () => {
+test("a review is successfully created with a PAT", async () => {
   nock("https://api.github.com").get("/user").reply(200, { login: "hmarr" });
+
+  nock("https://api.github.com")
+    .get("/repos/hmarr/test/pulls/101")
+    .reply(200, { head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" } });
+
+  nock("https://api.github.com")
+    .get("/repos/hmarr/test/pulls/101/reviews")
+    .reply(200, []);
+
+  nock("https://api.github.com")
+    .post("/repos/hmarr/test/pulls/101/reviews")
+    .reply(200, { id: 1 });
+
+  await approve("gh-tok", ghContext());
+
+  expect(core.info).toHaveBeenCalledWith(
+    expect.stringContaining("Approved pull request #101")
+  );
+});
+
+test("a review is successfully created with an Actions token", async () => {
+  nock("https://api.github.com").get("/user").reply(403, {});
 
   nock("https://api.github.com")
     .get("/repos/hmarr/test/pulls/101")

@@ -2,6 +2,7 @@ import * as core from "@actions/core";
 import * as github from "@actions/github";
 import { RequestError } from "@octokit/request-error";
 import { Context } from "@actions/github/lib/context";
+import { GitHub } from "@actions/github/lib/utils";
 
 export async function approve(
   token: string,
@@ -24,8 +25,8 @@ export async function approve(
 
   try {
     core.info(`Getting current user info`);
-    const { data: user } = await client.rest.users.getAuthenticated();
-    core.info(`Current user is ${user.login}`);
+    const login = await getLoginForToken(client);
+    core.info(`Current user is ${login}`);
 
     core.info(`Getting pull request #${prNumber} info`);
     const pull_request = await client.rest.pulls.get({
@@ -48,7 +49,7 @@ export async function approve(
 
     for (const review of reviews.data) {
       if (
-        review.user?.login == user.login &&
+        review.user?.login == login &&
         review.commit_id == commit &&
         review.state == "APPROVED"
       ) {
@@ -112,5 +113,23 @@ export async function approve(
       core.setFailed("Unknown error");
     }
     return;
+  }
+}
+
+async function getLoginForToken(
+  client: InstanceType<typeof GitHub>
+): Promise<string> {
+  try {
+    const { data: user } = await client.rest.users.getAuthenticated();
+    return user.login;
+  } catch (error) {
+    if (error instanceof RequestError) {
+      // If you use the GITHUB_TOKEN provided by GitHub Actions to fetch the current user
+      // you get a 403. For now we'll assume any 403 means this is an Actions token.
+      if (error.status === 403) {
+        return "github-actions[bot]";
+      }
+    }
+    throw error;
   }
 }
