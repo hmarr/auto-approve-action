@@ -17,6 +17,8 @@ on: pull_request_target
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     steps:
     - uses: hmarr/auto-approve-action@v2
       with:
@@ -30,14 +32,16 @@ Combine with an `if` clause to only auto-approve certain users. For example, to 
 name: Auto approve
 
 on:
-  pull_request_target
+  pull_request
 
 jobs:
   auto-approve:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     steps:
     - uses: hmarr/auto-approve-action@v2
-      if: github.actor == 'dependabot[bot]' || github.actor == 'dependabot-preview[bot]'
+      if: github.actor == 'dependabot[bot]'
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
 ```
@@ -56,6 +60,8 @@ on:
 jobs:
   auto-approve:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     steps:
     - uses: hmarr/auto-approve-action@v2
       with:
