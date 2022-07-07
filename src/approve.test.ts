@@ -64,6 +64,28 @@ test("a review is successfully created with an Actions token", async () => {
   );
 });
 
+test("when a review is successfully created with message", async () => {
+  nock("https://api.github.com").get("/user").reply(403, {});
+
+  nock("https://api.github.com")
+    .get("/repos/hmarr/test/pulls/101")
+    .reply(200, { head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" } });
+
+  nock("https://api.github.com")
+    .get("/repos/hmarr/test/pulls/101/reviews")
+    .reply(200, []);
+
+  nock("https://api.github.com")
+    .post("/repos/hmarr/test/pulls/101/reviews")
+    .reply(200, { id: 1 });
+
+  await approve("gh-tok", ghContext(), undefined, "Review body");
+
+  expect(core.info).toHaveBeenCalledWith(
+    expect.stringContaining("Approved pull request #101")
+  );
+});
+
 test("when a review is successfully created using pull-request-number", async () => {
   nock("https://api.github.com").get("/user").reply(200, { login: "hmarr" });
 
