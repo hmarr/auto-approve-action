@@ -69,6 +69,30 @@ jobs:
         pull-request-number: ${{ github.event.inputs.pullRequestNumber }}
 ```
 
+Optionally, You can provide a message for the review:
+
+```yaml
+name: Auto approve
+
+on:
+  workflow_dispatch:
+    inputs: pullRequestNumber
+      description: Pull request number to auto-approve
+      required: false
+
+jobs:
+  auto-approve:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+    - uses: hmarr/auto-approve-action@v2
+      if: github.actor == 'dependabot[bot]'
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        review-message: "Auto approved automated PR"
+```
+
 ## Why?
 
 GitHub lets you prevent merges of unapproved pull requests. However, it's occasionally useful to selectively circumvent this restriction - for instance, some people want Dependabot's automated pull requests to not require approval.
