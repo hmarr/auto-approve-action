@@ -8341,7 +8341,7 @@ exports.approve = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const request_error_1 = __nccwpck_require__(537);
-function approve(token, context, prNumber) {
+function approve(token, context, prNumber, reviewMessage) {
     var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
         if (!prNumber) {
@@ -8384,6 +8384,7 @@ function approve(token, context, prNumber) {
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 pull_number: prNumber,
+                body: reviewMessage,
                 event: "APPROVE",
             });
             core.info(`Approved pull request #${prNumber}`);
@@ -8491,16 +8492,13 @@ const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const approve_1 = __nccwpck_require__(6609);
 function run() {
+    var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const token = core.getInput("github-token", { required: true });
-            const prNumber = parseInt(core.getInput("pull-request-number"), 10);
-            if (!Number.isNaN(prNumber)) {
-                yield (0, approve_1.approve)(token, github.context, prNumber);
-            }
-            else {
-                yield (0, approve_1.approve)(token, github.context);
-            }
+            const reviewMessage = core.getInput("review-message");
+            const prNumber = (_a = parseInt(core.getInput("pull-request-number"), 10)) !== null && _a !== void 0 ? _a : (_b = github.context.payload.pull_request) === null || _b === void 0 ? void 0 : _b.number;
+            yield (0, approve_1.approve)(token, github.context, prNumber, reviewMessage);
         }
         catch (error) {
             if (error instanceof Error) {

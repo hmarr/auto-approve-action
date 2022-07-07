@@ -10,6 +10,9 @@ inputs:
   pull-request-number:
     description: '(optional) The ID of a pull request to auto-approve. By default, this action tries to use the pull_request event payload.'
     required: false
+  review-message:
+    description: '(optional) The message of the pull request review.'
+    required: false
 runs:
   using: 'node12'
   main: 'dist/index.js'
