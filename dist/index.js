@@ -1806,6 +1806,7 @@ class Context {
 exports.Context = Context;
 //# sourceMappingURL=context.js.map
 
+
 /***/ }),
 
 /***/ 5438:
@@ -10215,6 +10216,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.run = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const approve_1 = __nccwpck_require__(6609);
@@ -10222,13 +10224,7 @@ function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const token = core.getInput("github-token", { required: true });
-            const prNumber = parseInt(core.getInput("pull-request-number"), 10);
-            if (!Number.isNaN(prNumber)) {
-                yield (0, approve_1.approve)(token, github.context, prNumber);
-            }
-            else {
-                yield (0, approve_1.approve)(token, github.context);
-            }
+            yield (0, approve_1.approve)(token, github.context, prNumber());
         }
         catch (error) {
             if (error instanceof Error) {
@@ -10240,7 +10236,24 @@ function run() {
         }
     });
 }
-run();
+exports.run = run;
+function prNumber() {
+    if (core.getInput("pull-request-number") !== "") {
+        const prNumber = parseInt(core.getInput("pull-request-number"), 10);
+        if (Number.isNaN(prNumber)) {
+            throw new Error("Invalid `pull-request-number` value");
+        }
+        return prNumber;
+    }
+    if (!github.context.payload.pull_request) {
+        throw new Error("This action must be run using a `pull_request` event or " +
+            "have an explicit `pull-request-number` provided");
+    }
+    return github.context.payload.pull_request.number;
+}
+if (require.main === require.cache[eval('__filename')]) {
+    run();
+}
 
 
 /***/ }),
