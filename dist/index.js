@@ -1806,7 +1806,6 @@ class Context {
 exports.Context = Context;
 //# sourceMappingURL=context.js.map
 
-
 /***/ }),
 
 /***/ 5438:
@@ -10224,7 +10223,7 @@ const approve_1 = __nccwpck_require__(6609);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const token = core.getInput("github-token", { required: true });
+            const token = core.getInput("github-token");
             const reviewMessage = core.getInput("review-message");
             yield (0, approve_1.approve)(token, github.context, prNumber(), reviewMessage || undefined);
         }
