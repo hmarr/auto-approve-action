@@ -4,7 +4,7 @@ import { approve } from "./approve";
 
 export async function run() {
   try {
-    const token = core.getInput("github-token", { required: true });
+    const token = core.getInput("github-token");
     const reviewMessage = core.getInput("review-message");
     await approve(
       token,
