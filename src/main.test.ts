@@ -35,16 +35,38 @@ afterEach(() => {
   process.env = originalEnv;
 });
 
+test("passes the review message to approve", async () => {
+  mockedGithub.context = ghContext();
+  process.env["INPUT_REVIEW-MESSAGE"] = "LGTM";
+  await run();
+  expect(mockedApprove).toHaveBeenCalledWith(
+    "tok-xyz",
+    expect.anything(),
+    101,
+    "LGTM"
+  );
+});
+
 test("calls approve when no PR number is provided", async () => {
   mockedGithub.context = ghContext();
   await run();
-  expect(mockedApprove).toHaveBeenCalledWith("tok-xyz", expect.anything(), 101);
+  expect(mockedApprove).toHaveBeenCalledWith(
+    "tok-xyz",
+    expect.anything(),
+    101,
+    undefined
+  );
 });
 
 test("calls approve when a valid PR number is provided", async () => {
   process.env["INPUT_PULL-REQUEST-NUMBER"] = "456";
   await run();
-  expect(mockedApprove).toHaveBeenCalledWith("tok-xyz", expect.anything(), 456);
+  expect(mockedApprove).toHaveBeenCalledWith(
+    "tok-xyz",
+    expect.anything(),
+    456,
+    undefined
+  );
 });
 
 test("errors when an invalid PR number is provided", async () => {

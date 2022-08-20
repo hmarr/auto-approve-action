@@ -10070,7 +10070,7 @@ exports.approve = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const request_error_1 = __nccwpck_require__(537);
-function approve(token, context, prNumber) {
+function approve(token, context, prNumber, reviewMessage) {
     var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
         if (!prNumber) {
@@ -10113,6 +10113,7 @@ function approve(token, context, prNumber) {
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 pull_number: prNumber,
+                body: reviewMessage,
                 event: "APPROVE",
             });
             core.info(`Approved pull request #${prNumber}`);
@@ -10224,7 +10225,8 @@ function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const token = core.getInput("github-token", { required: true });
-            yield (0, approve_1.approve)(token, github.context, prNumber());
+            const reviewMessage = core.getInput("review-message");
+            yield (0, approve_1.approve)(token, github.context, prNumber(), reviewMessage || undefined);
         }
         catch (error) {
             if (error instanceof Error) {

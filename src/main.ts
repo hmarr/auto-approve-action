@@ -5,7 +5,13 @@ import { approve } from "./approve";
 export async function run() {
   try {
     const token = core.getInput("github-token", { required: true });
-    await approve(token, github.context, prNumber());
+    const reviewMessage = core.getInput("review-message");
+    await approve(
+      token,
+      github.context,
+      prNumber(),
+      reviewMessage || undefined
+    );
   } catch (error) {
     if (error instanceof Error) {
       core.setFailed(error.message);
