@@ -67,7 +67,7 @@ jobs:
         pull-request-number: ${{ github.event.inputs.pullRequestNumber }}
 ```
 
-Optionally, You can provide a message for the review:
+Optionally, you can provide a message for the review:
 
 ```yaml
 name: Auto approve
