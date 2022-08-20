@@ -20,19 +20,17 @@ jobs:
     permissions:
       pull-requests: write
     steps:
-    - uses: hmarr/auto-approve-action@v2
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: hmarr/auto-approve-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 ```
-
 
 Combine with an `if` clause to only auto-approve certain users. For example, to auto-approve [Dependabot][dependabot] pull requests, use:
 
 ```yaml
 name: Auto approve
 
-on:
-  pull_request
+on: pull_request
 
 jobs:
   auto-approve:
@@ -40,10 +38,10 @@ jobs:
     permissions:
       pull-requests: write
     steps:
-    - uses: hmarr/auto-approve-action@v2
-      if: github.actor == 'dependabot[bot]'
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: hmarr/auto-approve-action@v2
+        if: github.actor == 'dependabot[bot]'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 If you want to use this action from a workflow file that doesn't run on the `pull_request` or `pull_request_target` events, use the `pull-request-number` input:
@@ -74,11 +72,7 @@ Optionally, You can provide a message for the review:
 ```yaml
 name: Auto approve
 
-on:
-  workflow_dispatch:
-    inputs: pullRequestNumber
-      description: Pull request number to auto-approve
-      required: false
+on: pull_request
 
 jobs:
   auto-approve:
@@ -86,11 +80,11 @@ jobs:
     permissions:
       pull-requests: write
     steps:
-    - uses: hmarr/auto-approve-action@v2
-      if: github.actor == 'dependabot[bot]'
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        review-message: "Auto approved automated PR"
+      - uses: hmarr/auto-approve-action@v2
+        if: github.actor == 'dependabot[bot]'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          review-message: "Auto approved automated PR"
 ```
 
 ## Why?
