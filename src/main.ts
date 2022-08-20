@@ -6,7 +6,12 @@ export async function run() {
   try {
     const token = core.getInput("github-token", { required: true });
     const reviewMessage = core.getInput("review-message");
-    await approve(token, github.context, prNumber(), reviewMessage || undefined);
+    await approve(
+      token,
+      github.context,
+      prNumber(),
+      reviewMessage || undefined
+    );
   } catch (error) {
     if (error instanceof Error) {
       core.setFailed(error.message);
