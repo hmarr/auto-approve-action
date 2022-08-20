@@ -4,7 +4,7 @@
 
 Automatically approve GitHub pull requests.
 
-**Important:** use v2.0.0 or later, as v1 was designed for the initial GitHub Actions beta, and no longer works.
+**Important:** use v2 or later, as v1 was designed for the initial GitHub Actions beta, and no longer works.
 
 ## Usage instructions
 
