@@ -81,6 +81,24 @@ jobs:
           review-message: "Auto approved automated PR"
 ```
 
+By default, this will use the [automatic GitHub token](https://docs.github.com/en/actions/security-guides/automatic-token-authentication) that's provided to the workflow. This means the approval will come from the "github-actions" bot user. Make sure you enable the `pull-requests: write` permission in your workflow.
+
+To approve the pull request as a different user, pass a GitHub Personal Access Token into the `github-token` input:
+
+```yaml
+name: Auto approve
+
+on: pull_request
+
+jobs:
+  auto-approve:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: hmarr/auto-approve-action@v2
+        with:
+          github-token: ${{ secrets.SOME_USERS_PAT }}
+```
+
 ## Why?
 
 GitHub lets you prevent merges of unapproved pull requests. However, it's occasionally useful to selectively circumvent this restriction - for instance, some people want Dependabot's automated pull requests to not require approval.
