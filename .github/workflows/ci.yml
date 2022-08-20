@@ -23,5 +23,11 @@ jobs:
     - name: Run tests
       run: npm test
 
-    - name: Check build artefact has been checked in
-      run: npm run build && git diff
+    - name: Compare the expected and actual dist/ directories
+      run: |
+        npm run build
+        if [ "$(git diff --ignore-blank-lines --ignore-space-at-eol dist/ | wc -l)" -gt "0" ]; then
+          echo "Detected uncommitted changes after build.  See status below:"
+          git diff
+          exit 1
+        fi
