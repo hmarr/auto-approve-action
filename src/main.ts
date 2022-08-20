@@ -26,8 +26,10 @@ function prNumber(): number {
   }
 
   if (!github.context.payload.pull_request) {
-    throw new Error("This action must be run using a `pull_request` event or " +
-      "have an explicit `pull-request-number` provided");
+    throw new Error(
+      "This action must be run using a `pull_request` event or " +
+        "have an explicit `pull-request-number` provided"
+    );
   }
   return github.context.payload.pull_request.number;
 }
