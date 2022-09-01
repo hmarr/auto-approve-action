@@ -28,7 +28,7 @@ Combine with an `if` clause to only auto-approve certain users. For example, to 
 ```yaml
 name: Auto approve
 
-on: pull_request
+on: pull_request_target
 
 jobs:
   auto-approve:
@@ -67,7 +67,7 @@ Optionally, you can provide a message for the review:
 ```yaml
 name: Auto approve
 
-on: pull_request
+on: pull_request_target
 
 jobs:
   auto-approve:
@@ -81,6 +81,8 @@ jobs:
           review-message: "Auto approved automated PR"
 ```
 
+### Approving on behalf of a different user
+
 By default, this will use the [automatic GitHub token](https://docs.github.com/en/actions/security-guides/automatic-token-authentication) that's provided to the workflow. This means the approval will come from the "github-actions" bot user. Make sure you enable the `pull-requests: write` permission in your workflow.
 
 To approve the pull request as a different user, pass a GitHub Personal Access Token into the `github-token` input. In order to approve the pull request, the token needs the `repo` scope enabled.
@@ -88,7 +90,7 @@ To approve the pull request as a different user, pass a GitHub Personal Access T
 ```yaml
 name: Auto approve
 
-on: pull_request
+on: pull_request_target
 
 jobs:
   auto-approve:
@@ -98,6 +100,12 @@ jobs:
         with:
           github-token: ${{ secrets.SOME_USERS_PAT }}
 ```
+
+### Approving Dependabot pull requests
+
+When a workflow is run in response to a Dependabot pull request using the `pull_request` event, the workflow won't have access to secrets. If you're trying to use a Personal Access Token (as above) but getting an error on Dependabot pull requests, this is probably why.
+
+Fortunately the fix is simple: use the `pull_request_target` event instead of `pull_request`. This runs the workflow in the context of the base branch of the pull request, which does have access to secrets.
 
 ## Why?
 
