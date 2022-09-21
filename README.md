@@ -35,9 +35,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
+    if: github.actor == 'dependabot[bot]'
     steps:
       - uses: hmarr/auto-approve-action@v2
-        if: github.actor == 'dependabot[bot]'
 ```
 
 If you want to use this action from a workflow file that doesn't run on the `pull_request` or `pull_request_target` events, use the `pull-request-number` input:
@@ -74,9 +74,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
+    if: github.actor == 'dependabot[bot]'
     steps:
       - uses: hmarr/auto-approve-action@v2
-        if: github.actor == 'dependabot[bot]'
         with:
           review-message: "Auto approved automated PR"
 ```
