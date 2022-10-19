@@ -43,7 +43,8 @@ test("passes the review message to approve", async () => {
     "tok-xyz",
     expect.anything(),
     101,
-    "LGTM"
+    "LGTM",
+    expect.anything()
   );
 });
 
@@ -54,7 +55,8 @@ test("calls approve when no PR number is provided", async () => {
     "tok-xyz",
     expect.anything(),
     101,
-    undefined
+    undefined,
+    expect.anything()
   );
 });
 
@@ -65,7 +67,8 @@ test("calls approve when a valid PR number is provided", async () => {
     "tok-xyz",
     expect.anything(),
     456,
-    undefined
+    undefined,
+    expect.anything()
   );
 });
 
@@ -73,6 +76,31 @@ test("errors when an invalid PR number is provided", async () => {
   process.env["INPUT_PULL-REQUEST-NUMBER"] = "not a number";
   await run();
   expect(mockedApprove).not.toHaveBeenCalled();
+});
+
+test("calls approve when force-review is set to true", async () => {
+  process.env["INPUT_PULL-REQUEST-NUMBER"] = "456";
+  process.env["INPUT_FORCE-REVIEW"] = "true";
+  await run();
+  expect(mockedApprove).toHaveBeenCalledWith(
+    "tok-xyz",
+    expect.anything(),
+    456,
+    undefined,
+    true
+  );
+});
+
+test("calls approve when force-review is set to false", async () => {
+  process.env["INPUT_PULL-REQUEST-NUMBER"] = "456";
+  await run();
+  expect(mockedApprove).toHaveBeenCalledWith(
+    "tok-xyz",
+    expect.anything(),
+    456,
+    undefined,
+    false
+  );
 });
 
 function ghContext(): Context {

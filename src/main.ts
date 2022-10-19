@@ -10,7 +10,8 @@ export async function run() {
       token,
       github.context,
       prNumber(),
-      reviewMessage || undefined
+      reviewMessage || undefined,
+      forceReview()
     );
   } catch (error) {
     if (error instanceof Error) {
@@ -37,6 +38,13 @@ function prNumber(): number {
     );
   }
   return github.context.payload.pull_request.number;
+}
+
+function forceReview(): boolean {
+  if (core.getInput("force-review") === undefined) {
+    return false;
+  }
+  return (/true/i).test(core.getInput("force-review"))
 }
 
 if (require.main === module) {

@@ -8,10 +8,14 @@ export async function approve(
   token: string,
   context: Context,
   prNumber?: number,
-  reviewMessage?: string
+  reviewMessage?: string,
+  forceReview?: boolean,
 ) {
   if (!prNumber) {
     prNumber = context.payload.pull_request?.number;
+  }
+  if (forceReview == null) {
+    forceReview = false;
   }
 
   if (!prNumber) {
@@ -54,15 +58,21 @@ export async function approve(
         review.commit_id == commit &&
         review.state == "APPROVED"
       ) {
-        core.info(
-          `Current user already approved pull request #${prNumber}, nothing to do`
-        );
-        return;
+        if (forceReview) {
+          core.info(
+            `Current user already approved pull request #${prNumber}, but forceReview is set to true, so re-approving anyway`
+          )
+        } else {
+          core.info(
+            `Current user already approved pull request #${prNumber}, nothing to do`
+          );
+          return;
+        }
       }
     }
 
     core.info(
-      `Pull request #${prNumber} has not been approved yet, creating approving review`
+      `Creating approving review for pull request #${prNumber}`
     );
     await client.rest.pulls.createReview({
       owner: context.repo.owner,
