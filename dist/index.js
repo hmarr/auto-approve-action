@@ -10069,11 +10069,14 @@ exports.approve = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const request_error_1 = __nccwpck_require__(537);
-function approve(token, context, prNumber, reviewMessage) {
+function approve(token, context, prNumber, reviewMessage, forceReview) {
     var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
         if (!prNumber) {
             prNumber = (_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
+        }
+        if (forceReview == null) {
+            forceReview = false;
         }
         if (!prNumber) {
             core.setFailed("Event payload missing `pull_request` key, and no `pull-request-number` provided as input." +
@@ -10103,11 +10106,16 @@ function approve(token, context, prNumber, reviewMessage) {
                 if (((_b = review.user) === null || _b === void 0 ? void 0 : _b.login) == login &&
                     review.commit_id == commit &&
                     review.state == "APPROVED") {
-                    core.info(`Current user already approved pull request #${prNumber}, nothing to do`);
-                    return;
+                    if (forceReview) {
+                        core.info(`Current user already approved pull request #${prNumber}, but forceReview is set to true, so re-approving anyway`);
+                    }
+                    else {
+                        core.info(`Current user already approved pull request #${prNumber}, nothing to do`);
+                        return;
+                    }
                 }
             }
-            core.info(`Pull request #${prNumber} has not been approved yet, creating approving review`);
+            core.info(`Creating approving review for pull request #${prNumber}`);
             yield client.rest.pulls.createReview({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -10225,7 +10233,7 @@ function run() {
         try {
             const token = core.getInput("github-token");
             const reviewMessage = core.getInput("review-message");
-            yield (0, approve_1.approve)(token, github.context, prNumber(), reviewMessage || undefined);
+            yield (0, approve_1.approve)(token, github.context, prNumber(), reviewMessage || undefined, forceReview());
         }
         catch (error) {
             if (error instanceof Error) {
@@ -10251,6 +10259,12 @@ function prNumber() {
             "have an explicit `pull-request-number` provided");
     }
     return github.context.payload.pull_request.number;
+}
+function forceReview() {
+    if (core.getInput("force-review") === undefined) {
+        return false;
+    }
+    return (/true/i).test(core.getInput("force-review"));
 }
 if (require.main === require.cache[eval('__filename')]) {
     run();

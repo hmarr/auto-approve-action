@@ -302,6 +302,34 @@ test("when a review has already been approved by another user", async () => {
   );
 });
 
+test("when a review has already been approved by another user and forceReview is set to true", async () => {
+  nock("https://api.github.com").get("/user").reply(200, { login: "hmarr" });
+
+  nock("https://api.github.com")
+    .get("/repos/hmarr/test/pulls/101")
+    .reply(200, { head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" } });
+
+  nock("https://api.github.com")
+    .get("/repos/hmarr/test/pulls/101/reviews")
+    .reply(200, [
+      {
+        user: { login: "some" },
+        commit_id: "24c5451bbf1fb09caa3ac8024df4788aff4d4974",
+        state: "APPROVED",
+      },
+    ]);
+
+  nock("https://api.github.com")
+    .post("/repos/hmarr/test/pulls/101/reviews")
+    .reply(200, { id: 1 });
+
+  await approve("gh-tok", new Context(), 101, undefined, true);
+
+  expect(core.info).toHaveBeenCalledWith(
+    expect.stringContaining("Approved pull request #101")
+  );
+});
+
 test("when a review has already been approved by unknown user", async () => {
   nock("https://api.github.com").get("/user").reply(200, { login: "hmarr" });
 

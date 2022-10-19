@@ -14,6 +14,9 @@ inputs:
   review-message:
     description: '(optional) The message of the pull request review.'
     required: false
+  force-review:
+    description: '(optional) Re-approves the PR even if status is already approved. Used for cases when a PR requests for a re-review.'
+    required: false
 runs:
   using: 'node16'
   main: 'dist/index.js'
