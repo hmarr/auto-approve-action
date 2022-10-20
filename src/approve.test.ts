@@ -24,10 +24,13 @@ afterEach(() => {
 const apiNock = nock("https://api.github.com");
 const apiMocks = {
   getUser: () => apiNock.get("/user").reply(200, { login: "hmarr" }),
-  getPull: () =>
-    apiNock.get("/repos/hmarr/test/pulls/101").reply(200, {
-      head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" },
-    }),
+  getPull: (pullRequest?: object) =>
+    apiNock.get("/repos/hmarr/test/pulls/101").reply(
+      200,
+      pullRequest ?? {
+        head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" },
+      }
+    ),
   getReviews: (reviews?: object[]) =>
     apiNock
       .get("/repos/hmarr/test/pulls/101/reviews")
@@ -219,6 +222,27 @@ test("when a review has already been approved by unknown user", async () => {
       state: "APPROVED",
     },
   ]);
+  const createReview = apiMocks.createReview();
+
+  await approve("gh-tok", new Context(), 101);
+
+  expect(createReview.isDone()).toBe(true);
+});
+
+test("when a review has been previously approved by user and but requests a re-review", async () => {
+  apiMocks.getUser();
+  apiMocks.getPull({
+    head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" },
+    requested_reviewers: [{ login: "hmarr" }],
+  });
+  apiMocks.getReviews([
+    {
+      user: { login: "some" },
+      commit_id: "24c5451bbf1fb09caa3ac8024df4788aff4d4974",
+      state: "APPROVED",
+    },
+  ]);
+
   const createReview = apiMocks.createReview();
 
   await approve("gh-tok", new Context(), 101);
