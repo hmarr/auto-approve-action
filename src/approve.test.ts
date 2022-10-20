@@ -1,6 +1,5 @@
 import * as core from "@actions/core";
 import { Context } from "@actions/github/lib/context";
-import { create } from "domain";
 import nock from "nock";
 import { approve } from "./approve";
 
@@ -32,6 +31,10 @@ const apiMocks = {
     apiNock
       .get("/repos/hmarr/test/pulls/101/reviews")
       .reply(200, reviews ?? []),
+  getRequestedReviewers: (reviewers?: object) =>
+    apiNock
+      .get("/repos/hmarr/test/pulls/101/requested_reviewers")
+      .reply(200, reviewers ?? {}),
   createReview: () =>
     apiNock.post("/repos/hmarr/test/pulls/101/reviews").reply(200, {}),
 };
@@ -40,6 +43,7 @@ test("a review is successfully created with a PAT", async () => {
   apiMocks.getUser();
   apiMocks.getPull();
   apiMocks.getReviews();
+  apiMocks.getRequestedReviewers();
   const createReview = apiMocks.createReview();
 
   await approve("gh-tok", ghContext());
@@ -51,6 +55,7 @@ test("a review is successfully created with an Actions token", async () => {
   apiMocks.getUser();
   apiMocks.getPull();
   apiMocks.getReviews();
+  apiMocks.getRequestedReviewers();
   const createReview = apiMocks.createReview();
 
   await approve("gh-tok", ghContext());
@@ -62,6 +67,7 @@ test("when a review is successfully created with message", async () => {
   apiMocks.getUser();
   apiMocks.getPull();
   apiMocks.getReviews();
+  apiMocks.getRequestedReviewers();
   const createReview = apiMocks.createReview();
 
   await approve("gh-tok", ghContext(), undefined, "Review body");
@@ -74,6 +80,7 @@ test("when a review is successfully created using pull-request-number", async ()
   apiNock
     .get("/repos/hmarr/test/pulls/102")
     .reply(200, { head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" } });
+  apiNock.get("/repos/hmarr/test/pulls/102/requested_reviewers").reply(200, []);
   apiNock.get("/repos/hmarr/test/pulls/102/reviews").reply(200, []);
 
   const createReview = apiNock
@@ -95,6 +102,7 @@ test("when a review has already been approved by current user", async () => {
       state: "APPROVED",
     },
   ]);
+  apiMocks.getRequestedReviewers();
   const createReview = apiMocks.createReview();
 
   await approve("gh-tok", ghContext());
@@ -105,6 +113,23 @@ test("when a review has already been approved by current user", async () => {
       "Current user already approved pull request #101, nothing to do"
     )
   );
+});
+test("when a review has already been approved but subsequently re-requested", async () => {
+  apiMocks.getUser();
+  apiMocks.getPull();
+  apiMocks.getReviews([
+    {
+      user: { login: "hmarr" },
+      commit_id: "24c5451bbf1fb09caa3ac8024df4788aff4d4974",
+      state: "APPROVED",
+    },
+  ]);
+  apiMocks.getRequestedReviewers({ users: [{ login: "hmarr" }] });
+  const createReview = apiMocks.createReview();
+
+  await approve("gh-tok", ghContext());
+
+  expect(createReview.isDone()).toBe(true);
 });
 
 test("when a review is pending", async () => {
@@ -117,6 +142,7 @@ test("when a review is pending", async () => {
       state: "PENDING",
     },
   ]);
+  apiMocks.getRequestedReviewers();
   const createReview = apiMocks.createReview();
 
   await approve("gh-tok", new Context(), 101);
@@ -134,6 +160,7 @@ test("when a review is dismissed", async () => {
       state: "DISMISSED",
     },
   ]);
+  apiMocks.getRequestedReviewers();
   const createReview = apiMocks.createReview();
 
   await approve("gh-tok", new Context(), 101);
@@ -151,6 +178,7 @@ test("when a review is not approved", async () => {
       state: "CHANGES_REQUESTED",
     },
   ]);
+  apiMocks.getRequestedReviewers();
   const createReview = apiMocks.createReview();
 
   await approve("gh-tok", new Context(), 101);
@@ -168,6 +196,7 @@ test("when a review is commented", async () => {
       state: "COMMENTED",
     },
   ]);
+  apiMocks.getRequestedReviewers();
   const createReview = apiMocks.createReview();
 
   await approve("gh-tok", new Context(), 101);
@@ -185,6 +214,7 @@ test("when an old commit has already been approved", async () => {
       state: "APPROVED",
     },
   ]);
+  apiMocks.getRequestedReviewers();
   const createReview = apiMocks.createReview();
 
   await approve("gh-tok", ghContext());
@@ -202,6 +232,7 @@ test("when a review has already been approved by another user", async () => {
       state: "APPROVED",
     },
   ]);
+  apiMocks.getRequestedReviewers();
   const createReview = apiMocks.createReview();
 
   await approve("gh-tok", new Context(), 101);
@@ -219,6 +250,7 @@ test("when a review has already been approved by unknown user", async () => {
       state: "APPROVED",
     },
   ]);
+  apiMocks.getRequestedReviewers();
   const createReview = apiMocks.createReview();
 
   await approve("gh-tok", new Context(), 101);
@@ -252,6 +284,7 @@ test("when the token doesn't have write permissions", async () => {
   apiMocks.getUser();
   apiMocks.getPull();
   apiMocks.getReviews();
+  apiMocks.getRequestedReviewers();
   apiNock
     .post("/repos/hmarr/test/pulls/101/reviews")
     .reply(403, { message: "Resource not accessible by integration" });
@@ -267,6 +300,7 @@ test("when a user tries to approve their own pull request", async () => {
   apiMocks.getUser();
   apiMocks.getPull();
   apiMocks.getReviews();
+  apiMocks.getRequestedReviewers();
   apiNock
     .post("/repos/hmarr/test/pulls/101/reviews")
     .reply(422, { message: "Unprocessable Entity" });
@@ -278,25 +312,16 @@ test("when a user tries to approve their own pull request", async () => {
   );
 });
 
-test("when pull request does not exist", async () => {
+test("when pull request does not exist or the token doesn't have repo access", async () => {
   apiMocks.getUser();
   apiNock
     .get("/repos/hmarr/test/pulls/101")
     .reply(404, { message: "Not Found" });
-  const createReview = apiMocks.createReview();
-
-  await approve("gh-tok", ghContext());
-
-  expect(createReview.isDone()).toBe(false);
-  expect(core.setFailed).toHaveBeenCalledWith(
-    expect.stringContaining("doesn't have access")
-  );
-});
-
-test("when the token doesn't have read access to the repository", async () => {
-  apiMocks.getUser();
   apiNock
-    .get("/repos/hmarr/test/pulls/101")
+    .get("/repos/hmarr/test/pulls/101/reviews")
+    .reply(404, { message: "Not Found" });
+  apiNock
+    .get("/repos/hmarr/test/pulls/101/requested_reviewers")
     .reply(404, { message: "Not Found" });
   const createReview = apiMocks.createReview();
 
@@ -312,6 +337,7 @@ test("when the token is read-only", async () => {
   apiMocks.getUser();
   apiMocks.getPull();
   apiMocks.getReviews();
+  apiMocks.getRequestedReviewers();
   apiNock
     .post("/repos/hmarr/test/pulls/101/reviews")
     .reply(403, { message: "Not Authorized" });
@@ -327,6 +353,7 @@ test("when the token doesn't have write access to the repository", async () => {
   apiMocks.getUser();
   apiMocks.getPull();
   apiMocks.getReviews();
+  apiMocks.getRequestedReviewers();
   apiNock
     .post("/repos/hmarr/test/pulls/101/reviews")
     .reply(404, { message: "Not Found" });

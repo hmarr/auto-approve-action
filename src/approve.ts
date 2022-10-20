@@ -30,43 +30,43 @@ export async function approve(
     core.info(`Current user is ${login}`);
 
     core.info(`Getting pull request #${prNumber} info`);
-    const pull_request = await client.rest.pulls.get({
-      owner: context.repo.owner,
-      repo: context.repo.repo,
-      pull_number: prNumber,
-    });
-    const commit = pull_request.data.head.sha;
+    const { owner, repo } = context.repo;
+    const queryParams = { owner, repo, pull_number: prNumber };
+    const [pullRequest, reviews, requestedReviewers] = await Promise.all([
+      client.rest.pulls.get(queryParams),
+      client.rest.pulls.listReviews(queryParams),
+      client.rest.pulls.listRequestedReviewers(queryParams),
+    ]);
 
+    const commit = pullRequest.data.head.sha;
     core.info(`Commit SHA is ${commit}`);
 
-    core.info(
-      `Getting reviews for pull request #${prNumber} and commit ${commit}`
+    // If the authenticated user has already approve this commit, and there
+    // are no outstanding review requests, then we don't need to do anything.
+    // Review requests show up when the review is dismissed and re-requested,
+    // so we do want to re-approve in that case.
+    const pendingReviewRequest = requestedReviewers.data?.users?.some(
+      (user) => user.login === login
     );
-    const reviews = await client.rest.pulls.listReviews({
-      owner: context.repo.owner,
-      repo: context.repo.repo,
-      pull_number: prNumber,
-    });
-
-    for (const review of reviews.data) {
-      if (
-        review.user?.login == login &&
-        review.commit_id == commit &&
-        review.state == "APPROVED"
-      ) {
-        core.info(
-          `Current user already approved pull request #${prNumber}, nothing to do`
-        );
-        return;
-      }
+    const approvalForCommit = reviews.data?.some(
+      (review) =>
+        review.user?.login === login &&
+        review.commit_id === commit &&
+        review.state === "APPROVED"
+    );
+    if (!pendingReviewRequest && approvalForCommit) {
+      core.info(
+        `Current user already approved pull request #${prNumber}, nothing to do`
+      );
+      return;
     }
 
     core.info(
       `Pull request #${prNumber} has not been approved yet, creating approving review`
     );
     await client.rest.pulls.createReview({
-      owner: context.repo.owner,
-      repo: context.repo.repo,
+      owner,
+      repo,
       pull_number: prNumber,
       body: reviewMessage,
       event: "APPROVE",
