@@ -1,5 +1,6 @@
 import * as core from "@actions/core";
 import { Context } from "@actions/github/lib/context";
+import { create } from "domain";
 import nock from "nock";
 import { approve } from "./approve";
 
@@ -20,113 +21,85 @@ afterEach(() => {
   process.env = originalEnv;
 });
 
+const apiNock = nock("https://api.github.com");
+const apiMocks = {
+  getUser: () => apiNock.get("/user").reply(200, { login: "hmarr" }),
+  getPull: () =>
+    apiNock.get("/repos/hmarr/test/pulls/101").reply(200, {
+      head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" },
+    }),
+  getReviews: (reviews?: object[]) =>
+    apiNock
+      .get("/repos/hmarr/test/pulls/101/reviews")
+      .reply(200, reviews ?? []),
+  createReview: () =>
+    apiNock.post("/repos/hmarr/test/pulls/101/reviews").reply(200, {}),
+};
+
 test("a review is successfully created with a PAT", async () => {
-  nock("https://api.github.com").get("/user").reply(200, { login: "hmarr" });
-
-  nock("https://api.github.com")
-    .get("/repos/hmarr/test/pulls/101")
-    .reply(200, { head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" } });
-
-  nock("https://api.github.com")
-    .get("/repos/hmarr/test/pulls/101/reviews")
-    .reply(200, []);
-
-  nock("https://api.github.com")
-    .post("/repos/hmarr/test/pulls/101/reviews")
-    .reply(200, { id: 1 });
+  apiMocks.getUser();
+  apiMocks.getPull();
+  apiMocks.getReviews();
+  const createReview = apiMocks.createReview();
 
   await approve("gh-tok", ghContext());
 
-  expect(core.info).toHaveBeenCalledWith(
-    expect.stringContaining("Approved pull request #101")
-  );
+  expect(createReview.isDone()).toBe(true);
 });
 
 test("a review is successfully created with an Actions token", async () => {
-  nock("https://api.github.com").get("/user").reply(403, {});
-
-  nock("https://api.github.com")
-    .get("/repos/hmarr/test/pulls/101")
-    .reply(200, { head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" } });
-
-  nock("https://api.github.com")
-    .get("/repos/hmarr/test/pulls/101/reviews")
-    .reply(200, []);
-
-  nock("https://api.github.com")
-    .post("/repos/hmarr/test/pulls/101/reviews")
-    .reply(200, { id: 1 });
+  apiMocks.getUser();
+  apiMocks.getPull();
+  apiMocks.getReviews();
+  const createReview = apiMocks.createReview();
 
   await approve("gh-tok", ghContext());
 
-  expect(core.info).toHaveBeenCalledWith(
-    expect.stringContaining("Approved pull request #101")
-  );
+  expect(createReview.isDone()).toBe(true);
 });
 
 test("when a review is successfully created with message", async () => {
-  nock("https://api.github.com").get("/user").reply(403, {});
-
-  nock("https://api.github.com")
-    .get("/repos/hmarr/test/pulls/101")
-    .reply(200, { head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" } });
-
-  nock("https://api.github.com")
-    .get("/repos/hmarr/test/pulls/101/reviews")
-    .reply(200, []);
-
-  nock("https://api.github.com")
-    .post("/repos/hmarr/test/pulls/101/reviews")
-    .reply(200, { id: 1 });
+  apiMocks.getUser();
+  apiMocks.getPull();
+  apiMocks.getReviews();
+  const createReview = apiMocks.createReview();
 
   await approve("gh-tok", ghContext(), undefined, "Review body");
 
-  expect(core.info).toHaveBeenCalledWith(
-    expect.stringContaining("Approved pull request #101")
-  );
+  expect(createReview.isDone()).toBe(true);
 });
 
 test("when a review is successfully created using pull-request-number", async () => {
-  nock("https://api.github.com").get("/user").reply(200, { login: "hmarr" });
-
-  nock("https://api.github.com")
+  apiMocks.getUser();
+  apiNock
     .get("/repos/hmarr/test/pulls/102")
     .reply(200, { head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" } });
+  apiNock.get("/repos/hmarr/test/pulls/102/reviews").reply(200, []);
 
-  nock("https://api.github.com")
-    .get("/repos/hmarr/test/pulls/102/reviews")
-    .reply(200, []);
-
-  nock("https://api.github.com")
+  const createReview = apiNock
     .post("/repos/hmarr/test/pulls/102/reviews")
     .reply(200, { id: 1 });
 
   await approve("gh-tok", new Context(), 102);
 
-  expect(core.info).toHaveBeenCalledWith(
-    expect.stringContaining("Approved pull request #102")
-  );
+  expect(createReview.isDone()).toBe(true);
 });
 
 test("when a review has already been approved by current user", async () => {
-  nock("https://api.github.com").get("/user").reply(200, { login: "hmarr" });
-
-  nock("https://api.github.com")
-    .get("/repos/hmarr/test/pulls/101")
-    .reply(200, { head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" } });
-
-  nock("https://api.github.com")
-    .get("/repos/hmarr/test/pulls/101/reviews")
-    .reply(200, [
-      {
-        user: { login: "hmarr" },
-        commit_id: "24c5451bbf1fb09caa3ac8024df4788aff4d4974",
-        state: "APPROVED",
-      },
-    ]);
+  apiMocks.getUser();
+  apiMocks.getPull();
+  apiMocks.getReviews([
+    {
+      user: { login: "hmarr" },
+      commit_id: "24c5451bbf1fb09caa3ac8024df4788aff4d4974",
+      state: "APPROVED",
+    },
+  ]);
+  const createReview = apiMocks.createReview();
 
   await approve("gh-tok", ghContext());
 
+  expect(createReview.isDone()).toBe(false);
   expect(core.info).toHaveBeenCalledWith(
     expect.stringContaining(
       "Current user already approved pull request #101, nothing to do"
@@ -135,233 +108,151 @@ test("when a review has already been approved by current user", async () => {
 });
 
 test("when a review is pending", async () => {
-  nock("https://api.github.com").get("/user").reply(200, { login: "hmarr" });
-
-  nock("https://api.github.com")
-    .get("/repos/hmarr/test/pulls/101")
-    .reply(200, { head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" } });
-
-  nock("https://api.github.com")
-    .get("/repos/hmarr/test/pulls/101/reviews")
-    .reply(200, [
-      {
-        user: { login: "hmarr" },
-        commit_id: "24c5451bbf1fb09caa3ac8024df4788aff4d4974",
-        state: "PENDING",
-      },
-    ]);
-
-  nock("https://api.github.com")
-    .post("/repos/hmarr/test/pulls/101/reviews")
-    .reply(200, { id: 1 });
+  apiMocks.getUser();
+  apiMocks.getPull();
+  apiMocks.getReviews([
+    {
+      user: { login: "hmarr" },
+      commit_id: "24c5451bbf1fb09caa3ac8024df4788aff4d4974",
+      state: "PENDING",
+    },
+  ]);
+  const createReview = apiMocks.createReview();
 
   await approve("gh-tok", new Context(), 101);
 
-  expect(core.info).toHaveBeenCalledWith(
-    expect.stringContaining("Approved pull request #101")
-  );
+  expect(createReview.isDone()).toBe(true);
 });
 
 test("when a review is dismissed", async () => {
-  nock("https://api.github.com").get("/user").reply(200, { login: "hmarr" });
-
-  nock("https://api.github.com")
-    .get("/repos/hmarr/test/pulls/101")
-    .reply(200, { head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" } });
-
-  nock("https://api.github.com")
-    .get("/repos/hmarr/test/pulls/101/reviews")
-    .reply(200, [
-      {
-        user: { login: "hmarr" },
-        commit_id: "24c5451bbf1fb09caa3ac8024df4788aff4d4974",
-        state: "DISMISSED",
-      },
-    ]);
-
-  nock("https://api.github.com")
-    .post("/repos/hmarr/test/pulls/101/reviews")
-    .reply(200, { id: 1 });
+  apiMocks.getUser();
+  apiMocks.getPull();
+  apiMocks.getReviews([
+    {
+      user: { login: "hmarr" },
+      commit_id: "24c5451bbf1fb09caa3ac8024df4788aff4d4974",
+      state: "DISMISSED",
+    },
+  ]);
+  const createReview = apiMocks.createReview();
 
   await approve("gh-tok", new Context(), 101);
 
-  expect(core.info).toHaveBeenCalledWith(
-    expect.stringContaining("Approved pull request #101")
-  );
+  expect(createReview.isDone()).toBe(true);
 });
 
 test("when a review is not approved", async () => {
-  nock("https://api.github.com").get("/user").reply(200, { login: "hmarr" });
-
-  nock("https://api.github.com")
-    .get("/repos/hmarr/test/pulls/101")
-    .reply(200, { head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" } });
-
-  nock("https://api.github.com")
-    .get("/repos/hmarr/test/pulls/101/reviews")
-    .reply(200, [
-      {
-        user: { login: "hmarr" },
-        commit_id: "24c5451bbf1fb09caa3ac8024df4788aff4d4974",
-        state: "CHANGES_REQUESTED",
-      },
-    ]);
-
-  nock("https://api.github.com")
-    .post("/repos/hmarr/test/pulls/101/reviews")
-    .reply(200, { id: 1 });
+  apiMocks.getUser();
+  apiMocks.getPull();
+  apiMocks.getReviews([
+    {
+      user: { login: "hmarr" },
+      commit_id: "24c5451bbf1fb09caa3ac8024df4788aff4d4974",
+      state: "CHANGES_REQUESTED",
+    },
+  ]);
+  const createReview = apiMocks.createReview();
 
   await approve("gh-tok", new Context(), 101);
 
-  expect(core.info).toHaveBeenCalledWith(
-    expect.stringContaining("Approved pull request #101")
-  );
+  expect(createReview.isDone()).toBe(true);
 });
 
 test("when a review is commented", async () => {
-  nock("https://api.github.com").get("/user").reply(200, { login: "hmarr" });
-
-  nock("https://api.github.com")
-    .get("/repos/hmarr/test/pulls/101")
-    .reply(200, { head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" } });
-
-  nock("https://api.github.com")
-    .get("/repos/hmarr/test/pulls/101/reviews")
-    .reply(200, [
-      {
-        user: { login: "hmarr" },
-        commit_id: "24c5451bbf1fb09caa3ac8024df4788aff4d4974",
-        state: "COMMENTED",
-      },
-    ]);
-
-  nock("https://api.github.com")
-    .post("/repos/hmarr/test/pulls/101/reviews")
-    .reply(200, { id: 1 });
+  apiMocks.getUser();
+  apiMocks.getPull();
+  apiMocks.getReviews([
+    {
+      user: { login: "hmarr" },
+      commit_id: "24c5451bbf1fb09caa3ac8024df4788aff4d4974",
+      state: "COMMENTED",
+    },
+  ]);
+  const createReview = apiMocks.createReview();
 
   await approve("gh-tok", new Context(), 101);
 
-  expect(core.info).toHaveBeenCalledWith(
-    expect.stringContaining("Approved pull request #101")
-  );
+  expect(createReview.isDone()).toBe(true);
 });
 
 test("when an old commit has already been approved", async () => {
-  nock("https://api.github.com").get("/user").reply(200, { login: "hmarr" });
-
-  nock("https://api.github.com")
-    .get("/repos/hmarr/test/pulls/101")
-    .reply(200, { head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" } });
-
-  nock("https://api.github.com")
-    .get("/repos/hmarr/test/pulls/101/reviews")
-    .reply(200, [
-      {
-        user: { login: "hmarr" },
-        commit_id: "6a9ec7556f0a7fa5b49527a1eea4878b8a22d2e0",
-        state: "APPROVED",
-      },
-    ]);
-
-  nock("https://api.github.com")
-    .post("/repos/hmarr/test/pulls/101/reviews")
-    .reply(200, { id: 1 });
+  apiMocks.getUser();
+  apiMocks.getPull();
+  apiMocks.getReviews([
+    {
+      user: { login: "hmarr" },
+      commit_id: "6a9ec7556f0a7fa5b49527a1eea4878b8a22d2e0",
+      state: "APPROVED",
+    },
+  ]);
+  const createReview = apiMocks.createReview();
 
   await approve("gh-tok", ghContext());
 
-  expect(core.info).toHaveBeenCalledWith(
-    expect.stringContaining("Approved pull request #101")
-  );
+  expect(createReview.isDone()).toBe(true);
 });
 
 test("when a review has already been approved by another user", async () => {
-  nock("https://api.github.com").get("/user").reply(200, { login: "hmarr" });
-
-  nock("https://api.github.com")
-    .get("/repos/hmarr/test/pulls/101")
-    .reply(200, { head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" } });
-
-  nock("https://api.github.com")
-    .get("/repos/hmarr/test/pulls/101/reviews")
-    .reply(200, [
-      {
-        user: { login: "some" },
-        commit_id: "24c5451bbf1fb09caa3ac8024df4788aff4d4974",
-        state: "APPROVED",
-      },
-    ]);
-
-  nock("https://api.github.com")
-    .post("/repos/hmarr/test/pulls/101/reviews")
-    .reply(200, { id: 1 });
+  apiMocks.getUser();
+  apiMocks.getPull();
+  apiMocks.getReviews([
+    {
+      user: { login: "some" },
+      commit_id: "24c5451bbf1fb09caa3ac8024df4788aff4d4974",
+      state: "APPROVED",
+    },
+  ]);
+  const createReview = apiMocks.createReview();
 
   await approve("gh-tok", new Context(), 101);
 
-  expect(core.info).toHaveBeenCalledWith(
-    expect.stringContaining("Approved pull request #101")
-  );
+  expect(createReview.isDone()).toBe(true);
 });
 
 test("when a review has already been approved by unknown user", async () => {
-  nock("https://api.github.com").get("/user").reply(200, { login: "hmarr" });
-
-  nock("https://api.github.com")
-    .get("/repos/hmarr/test/pulls/101")
-    .reply(200, { head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" } });
-
-  nock("https://api.github.com")
-    .get("/repos/hmarr/test/pulls/101/reviews")
-    .reply(200, [
-      {
-        user: null,
-        commit_id: "24c5451bbf1fb09caa3ac8024df4788aff4d4974",
-        state: "APPROVED",
-      },
-    ]);
-
-  nock("https://api.github.com")
-    .post("/repos/hmarr/test/pulls/101/reviews")
-    .reply(200, { id: 1 });
+  apiMocks.getUser();
+  apiMocks.getPull();
+  apiMocks.getReviews([
+    {
+      user: null,
+      commit_id: "24c5451bbf1fb09caa3ac8024df4788aff4d4974",
+      state: "APPROVED",
+    },
+  ]);
+  const createReview = apiMocks.createReview();
 
   await approve("gh-tok", new Context(), 101);
 
-  expect(core.info).toHaveBeenCalledWith(
-    expect.stringContaining("Approved pull request #101")
-  );
+  expect(createReview.isDone()).toBe(true);
 });
 
 test("without a pull request", async () => {
+  const createReview = apiMocks.createReview();
   await approve("gh-tok", new Context());
 
+  expect(createReview.isDone()).toBe(false);
   expect(core.setFailed).toHaveBeenCalledWith(
     expect.stringContaining("Make sure you're triggering this")
   );
 });
 
 test("when the token is invalid", async () => {
-  nock("https://api.github.com")
-    .get("/user")
-    .reply(401, { message: "Bad credentials" });
+  apiNock.get("/user").reply(401, { message: "Bad credentials" });
+  const createReview = apiMocks.createReview();
 
   await approve("gh-tok", ghContext());
 
+  expect(createReview.isDone()).toBe(false);
   expect(core.setFailed).toHaveBeenCalledWith(
     expect.stringContaining("`github-token` input parameter")
   );
 });
 
 test("when the token doesn't have write permissions", async () => {
-  nock("https://api.github.com").get("/user").reply(200, { login: "hmarr" });
-
-  nock("https://api.github.com")
-    .get("/repos/hmarr/test/pulls/101")
-    .reply(200, { head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" } });
-
-  nock("https://api.github.com")
-    .get("/repos/hmarr/test/pulls/101/reviews")
-    .reply(200, []);
-
-  nock("https://api.github.com")
+  apiMocks.getUser();
+  apiMocks.getPull();
+  apiMocks.getReviews();
+  apiNock
     .post("/repos/hmarr/test/pulls/101/reviews")
     .reply(403, { message: "Resource not accessible by integration" });
 
@@ -373,17 +264,10 @@ test("when the token doesn't have write permissions", async () => {
 });
 
 test("when a user tries to approve their own pull request", async () => {
-  nock("https://api.github.com").get("/user").reply(200, { login: "hmarr" });
-
-  nock("https://api.github.com")
-    .get("/repos/hmarr/test/pulls/101")
-    .reply(200, { head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" } });
-
-  nock("https://api.github.com")
-    .get("/repos/hmarr/test/pulls/101/reviews")
-    .reply(200, []);
-
-  nock("https://api.github.com")
+  apiMocks.getUser();
+  apiMocks.getPull();
+  apiMocks.getReviews();
+  apiNock
     .post("/repos/hmarr/test/pulls/101/reviews")
     .reply(422, { message: "Unprocessable Entity" });
 
@@ -395,45 +279,40 @@ test("when a user tries to approve their own pull request", async () => {
 });
 
 test("when pull request does not exist", async () => {
-  nock("https://api.github.com").get("/user").reply(200, { login: "hmarr" });
-
-  nock("https://api.github.com")
+  apiMocks.getUser();
+  apiNock
     .get("/repos/hmarr/test/pulls/101")
     .reply(404, { message: "Not Found" });
+  const createReview = apiMocks.createReview();
 
   await approve("gh-tok", ghContext());
 
+  expect(createReview.isDone()).toBe(false);
   expect(core.setFailed).toHaveBeenCalledWith(
     expect.stringContaining("doesn't have access")
   );
 });
 
 test("when the token doesn't have read access to the repository", async () => {
-  nock("https://api.github.com").get("/user").reply(200, { login: "hmarr" });
-
-  nock("https://api.github.com")
+  apiMocks.getUser();
+  apiNock
     .get("/repos/hmarr/test/pulls/101")
     .reply(404, { message: "Not Found" });
+  const createReview = apiMocks.createReview();
 
   await approve("gh-tok", ghContext());
 
+  expect(createReview.isDone()).toBe(false);
   expect(core.setFailed).toHaveBeenCalledWith(
     expect.stringContaining("doesn't have access")
   );
 });
 
 test("when the token is read-only", async () => {
-  nock("https://api.github.com").get("/user").reply(200, { login: "hmarr" });
-
-  nock("https://api.github.com")
-    .get("/repos/hmarr/test/pulls/101")
-    .reply(200, { head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" } });
-
-  nock("https://api.github.com")
-    .get("/repos/hmarr/test/pulls/101/reviews")
-    .reply(200, []);
-
-  nock("https://api.github.com")
+  apiMocks.getUser();
+  apiMocks.getPull();
+  apiMocks.getReviews();
+  apiNock
     .post("/repos/hmarr/test/pulls/101/reviews")
     .reply(403, { message: "Not Authorized" });
 
@@ -445,17 +324,10 @@ test("when the token is read-only", async () => {
 });
 
 test("when the token doesn't have write access to the repository", async () => {
-  nock("https://api.github.com").get("/user").reply(200, { login: "hmarr" });
-
-  nock("https://api.github.com")
-    .get("/repos/hmarr/test/pulls/101")
-    .reply(200, { head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" } });
-
-  nock("https://api.github.com")
-    .get("/repos/hmarr/test/pulls/101/reviews")
-    .reply(200, []);
-
-  nock("https://api.github.com")
+  apiMocks.getUser();
+  apiMocks.getPull();
+  apiMocks.getReviews();
+  apiNock
     .post("/repos/hmarr/test/pulls/101/reviews")
     .reply(404, { message: "Not Found" });
 
