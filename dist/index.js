@@ -1806,6 +1806,7 @@ class Context {
 exports.Context = Context;
 //# sourceMappingURL=context.js.map
 
+
 /***/ }),
 
 /***/ 5438:
@@ -10070,7 +10071,7 @@ const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const request_error_1 = __nccwpck_require__(537);
 function approve(token, context, prNumber, reviewMessage) {
-    var _a, _b;
+    var _a, _b, _c, _d;
     return __awaiter(this, void 0, void 0, function* () {
         if (!prNumber) {
             prNumber = (_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
@@ -10086,31 +10087,34 @@ function approve(token, context, prNumber, reviewMessage) {
             const login = yield getLoginForToken(client);
             core.info(`Current user is ${login}`);
             core.info(`Getting pull request #${prNumber} info`);
-            const pull_request = yield client.rest.pulls.get({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: prNumber,
-            });
-            const commit = pull_request.data.head.sha;
+            const { owner, repo } = context.repo;
+            const queryParams = { owner, repo, pull_number: prNumber };
+            const [pullRequest, reviews, requestedReviewers] = yield Promise.all([
+                client.rest.pulls.get(queryParams),
+                client.rest.pulls.listReviews(queryParams),
+                client.rest.pulls.listRequestedReviewers(queryParams),
+            ]);
+            const commit = pullRequest.data.head.sha;
             core.info(`Commit SHA is ${commit}`);
-            core.info(`Getting reviews for pull request #${prNumber} and commit ${commit}`);
-            const reviews = yield client.rest.pulls.listReviews({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: prNumber,
+            // If the authenticated user has already approve this commit, and there
+            // are no outstanding review requests, then we don't need to do anything.
+            // Review requests show up when the review is dismissed and re-requested,
+            // so we do want to re-approve in that case.
+            const pendingReviewRequest = (_c = (_b = requestedReviewers.data) === null || _b === void 0 ? void 0 : _b.users) === null || _c === void 0 ? void 0 : _c.some((user) => user.login === login);
+            const approvalForCommit = (_d = reviews.data) === null || _d === void 0 ? void 0 : _d.some((review) => {
+                var _a;
+                return ((_a = review.user) === null || _a === void 0 ? void 0 : _a.login) === login &&
+                    review.commit_id === commit &&
+                    review.state === "APPROVED";
             });
-            for (const review of reviews.data) {
-                if (((_b = review.user) === null || _b === void 0 ? void 0 : _b.login) == login &&
-                    review.commit_id == commit &&
-                    review.state == "APPROVED") {
-                    core.info(`Current user already approved pull request #${prNumber}, nothing to do`);
-                    return;
-                }
+            if (!pendingReviewRequest && approvalForCommit) {
+                core.info(`Current user already approved pull request #${prNumber}, nothing to do`);
+                return;
             }
             core.info(`Pull request #${prNumber} has not been approved yet, creating approving review`);
             yield client.rest.pulls.createReview({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
+                owner,
+                repo,
                 pull_number: prNumber,
                 body: reviewMessage,
                 event: "APPROVE",
