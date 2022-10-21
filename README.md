@@ -1,5 +1,7 @@
 # Auto Approve GitHub Action
 
+[![CI](https://github.com/hmarr/auto-approve-action/actions/workflows/ci.yml/badge.svg?event=push)](https://github.com/hmarr/auto-approve-action/actions/workflows/ci.yml)
+
 **Name:** `hmarr/auto-approve-action`
 
 Automatically approve GitHub pull requests.
