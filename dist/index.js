@@ -1806,6 +1806,7 @@ class Context {
 exports.Context = Context;
 //# sourceMappingURL=context.js.map
 
+
 /***/ }),
 
 /***/ 5438:
@@ -10070,7 +10071,7 @@ const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const request_error_1 = __nccwpck_require__(537);
 function approve(token, context, prNumber, reviewMessage) {
-    var _a, _b, _c;
+    var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
         if (!prNumber) {
             prNumber = (_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
@@ -10082,31 +10083,21 @@ function approve(token, context, prNumber, reviewMessage) {
         }
         const client = github.getOctokit(token);
         try {
-            core.info(`Getting current user info`);
-            const login = yield getLoginForToken(client);
+            const { owner, repo } = context.repo;
+            core.info(`Fetching user, pull request information, and existing reviews`);
+            const [login, { data: pr }, { data: reviews }] = yield Promise.all([
+                getLoginForToken(client),
+                client.rest.pulls.get({ owner, repo, pull_number: prNumber }),
+                client.rest.pulls.listReviews({ owner, repo, pull_number: prNumber }),
+            ]);
             core.info(`Current user is ${login}`);
-            core.info(`Getting pull request #${prNumber} info`);
-            const pull_request = yield client.rest.pulls.get({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: prNumber,
-            });
-            const commit = pull_request.data.head.sha;
-            core.info(`Commit SHA is ${commit}`);
-            core.info(`Getting reviews for pull request #${prNumber} and commit ${commit}`);
-            const reviews = yield client.rest.pulls.listReviews({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: prNumber,
-            });
-            for (const review of reviews.data) {
-                if (((_b = review.user) === null || _b === void 0 ? void 0 : _b.login) == login &&
-                    review.commit_id == commit &&
-                    review.state == "APPROVED" &&
-                    !((_c = pull_request.data.requested_reviewers) === null || _c === void 0 ? void 0 : _c.some((reviewer) => reviewer.login == login))) {
-                    core.info(`Current user already approved pull request #${prNumber}, nothing to do`);
-                    return;
-                }
+            const prHead = pr.head.sha;
+            core.info(`Commit SHA is ${prHead}`);
+            const alreadyReviewed = reviews.some(({ user, commit_id, state }) => (user === null || user === void 0 ? void 0 : user.login) === login && commit_id == prHead && state === "APPROVED");
+            const outstandingReviewRequest = (_b = pr.requested_reviewers) === null || _b === void 0 ? void 0 : _b.some((reviewer) => reviewer.login == login);
+            if (alreadyReviewed && !outstandingReviewRequest) {
+                core.info(`Current user already approved pull request #${prNumber}, nothing to do`);
+                return;
             }
             core.info(`Pull request #${prNumber} has not been approved yet, creating approving review`);
             yield client.rest.pulls.createReview({

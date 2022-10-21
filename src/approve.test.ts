@@ -23,18 +23,19 @@ afterEach(() => {
 
 const apiNock = nock("https://api.github.com");
 const apiMocks = {
-  getUser: () => apiNock.get("/user").reply(200, { login: "hmarr" }),
-  getPull: (pullRequest?: object) =>
-    apiNock.get("/repos/hmarr/test/pulls/101").reply(
-      200,
-      pullRequest ?? {
-        head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" },
-      }
-    ),
-  getReviews: (reviews?: object[]) =>
+  getUser: (status?: number, body?: object) =>
+    apiNock.get("/user").reply(status ?? 200, body ?? { login: "hmarr" }),
+  getPull: (status?: number, body?: object) =>
+    apiNock
+      .get("/repos/hmarr/test/pulls/101")
+      .reply(
+        status ?? 200,
+        body ?? { head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" } }
+      ),
+  getReviews: (status?: number, body?: any) =>
     apiNock
       .get("/repos/hmarr/test/pulls/101/reviews")
-      .reply(200, reviews ?? []),
+      .reply(status ?? 200, body ?? []),
   createReview: () =>
     apiNock.post("/repos/hmarr/test/pulls/101/reviews").reply(200, {}),
 };
@@ -91,7 +92,7 @@ test("when a review is successfully created using pull-request-number", async ()
 test("when a review has already been approved by current user", async () => {
   apiMocks.getUser();
   apiMocks.getPull();
-  apiMocks.getReviews([
+  apiMocks.getReviews(200, [
     {
       user: { login: "hmarr" },
       commit_id: "24c5451bbf1fb09caa3ac8024df4788aff4d4974",
@@ -113,7 +114,7 @@ test("when a review has already been approved by current user", async () => {
 test("when a review is pending", async () => {
   apiMocks.getUser();
   apiMocks.getPull();
-  apiMocks.getReviews([
+  apiMocks.getReviews(200, [
     {
       user: { login: "hmarr" },
       commit_id: "24c5451bbf1fb09caa3ac8024df4788aff4d4974",
@@ -130,7 +131,7 @@ test("when a review is pending", async () => {
 test("when a review is dismissed", async () => {
   apiMocks.getUser();
   apiMocks.getPull();
-  apiMocks.getReviews([
+  apiMocks.getReviews(200, [
     {
       user: { login: "hmarr" },
       commit_id: "24c5451bbf1fb09caa3ac8024df4788aff4d4974",
@@ -147,7 +148,7 @@ test("when a review is dismissed", async () => {
 test("when a review is not approved", async () => {
   apiMocks.getUser();
   apiMocks.getPull();
-  apiMocks.getReviews([
+  apiMocks.getReviews(200, [
     {
       user: { login: "hmarr" },
       commit_id: "24c5451bbf1fb09caa3ac8024df4788aff4d4974",
@@ -164,7 +165,7 @@ test("when a review is not approved", async () => {
 test("when a review is commented", async () => {
   apiMocks.getUser();
   apiMocks.getPull();
-  apiMocks.getReviews([
+  apiMocks.getReviews(200, [
     {
       user: { login: "hmarr" },
       commit_id: "24c5451bbf1fb09caa3ac8024df4788aff4d4974",
@@ -181,7 +182,7 @@ test("when a review is commented", async () => {
 test("when an old commit has already been approved", async () => {
   apiMocks.getUser();
   apiMocks.getPull();
-  apiMocks.getReviews([
+  apiMocks.getReviews(200, [
     {
       user: { login: "hmarr" },
       commit_id: "6a9ec7556f0a7fa5b49527a1eea4878b8a22d2e0",
@@ -198,7 +199,7 @@ test("when an old commit has already been approved", async () => {
 test("when a review has already been approved by another user", async () => {
   apiMocks.getUser();
   apiMocks.getPull();
-  apiMocks.getReviews([
+  apiMocks.getReviews(200, [
     {
       user: { login: "some" },
       commit_id: "24c5451bbf1fb09caa3ac8024df4788aff4d4974",
@@ -215,7 +216,7 @@ test("when a review has already been approved by another user", async () => {
 test("when a review has already been approved by unknown user", async () => {
   apiMocks.getUser();
   apiMocks.getPull();
-  apiMocks.getReviews([
+  apiMocks.getReviews(200, [
     {
       user: null,
       commit_id: "24c5451bbf1fb09caa3ac8024df4788aff4d4974",
@@ -231,11 +232,11 @@ test("when a review has already been approved by unknown user", async () => {
 
 test("when a review has been previously approved by user and but requests a re-review", async () => {
   apiMocks.getUser();
-  apiMocks.getPull({
+  apiMocks.getPull(200, {
     head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" },
     requested_reviewers: [{ login: "hmarr" }],
   });
-  apiMocks.getReviews([
+  apiMocks.getReviews(200, [
     {
       user: { login: "some" },
       commit_id: "24c5451bbf1fb09caa3ac8024df4788aff4d4974",
@@ -261,7 +262,9 @@ test("without a pull request", async () => {
 });
 
 test("when the token is invalid", async () => {
-  apiNock.get("/user").reply(401, { message: "Bad credentials" });
+  apiMocks.getUser(401, { message: "Bad credentials" });
+  apiMocks.getPull(401, { message: "Bad credentials" });
+  apiMocks.getReviews(401, { message: "Bad credentials" });
   const createReview = apiMocks.createReview();
 
   await approve("gh-tok", ghContext());
@@ -302,26 +305,10 @@ test("when a user tries to approve their own pull request", async () => {
   );
 });
 
-test("when pull request does not exist", async () => {
+test("when pull request does not exist or the token doesn't have access", async () => {
   apiMocks.getUser();
-  apiNock
-    .get("/repos/hmarr/test/pulls/101")
-    .reply(404, { message: "Not Found" });
-  const createReview = apiMocks.createReview();
-
-  await approve("gh-tok", ghContext());
-
-  expect(createReview.isDone()).toBe(false);
-  expect(core.setFailed).toHaveBeenCalledWith(
-    expect.stringContaining("doesn't have access")
-  );
-});
-
-test("when the token doesn't have read access to the repository", async () => {
-  apiMocks.getUser();
-  apiNock
-    .get("/repos/hmarr/test/pulls/101")
-    .reply(404, { message: "Not Found" });
+  apiMocks.getPull(404, { message: "Not Found" });
+  apiMocks.getReviews(404, { message: "Not Found" });
   const createReview = apiMocks.createReview();
 
   await approve("gh-tok", ghContext());

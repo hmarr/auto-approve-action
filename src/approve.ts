@@ -25,43 +25,32 @@ export async function approve(
   const client = github.getOctokit(token);
 
   try {
-    core.info(`Getting current user info`);
-    const login = await getLoginForToken(client);
+    const { owner, repo } = context.repo;
+
+    core.info(`Fetching user, pull request information, and existing reviews`);
+    const [login, { data: pr }, { data: reviews }] = await Promise.all([
+      getLoginForToken(client),
+      client.rest.pulls.get({ owner, repo, pull_number: prNumber }),
+      client.rest.pulls.listReviews({ owner, repo, pull_number: prNumber }),
+    ]);
+
     core.info(`Current user is ${login}`);
 
-    core.info(`Getting pull request #${prNumber} info`);
-    const pull_request = await client.rest.pulls.get({
-      owner: context.repo.owner,
-      repo: context.repo.repo,
-      pull_number: prNumber,
-    });
-    const commit = pull_request.data.head.sha;
+    const prHead = pr.head.sha;
+    core.info(`Commit SHA is ${prHead}`);
 
-    core.info(`Commit SHA is ${commit}`);
-
-    core.info(
-      `Getting reviews for pull request #${prNumber} and commit ${commit}`
+    const alreadyReviewed = reviews.some(
+      ({ user, commit_id, state }) =>
+        user?.login === login && commit_id == prHead && state === "APPROVED"
     );
-    const reviews = await client.rest.pulls.listReviews({
-      owner: context.repo.owner,
-      repo: context.repo.repo,
-      pull_number: prNumber,
-    });
-
-    for (const review of reviews.data) {
-      if (
-        review.user?.login == login &&
-        review.commit_id == commit &&
-        review.state == "APPROVED" &&
-        !pull_request.data.requested_reviewers?.some(
-          (reviewer) => reviewer.login == login
-        )
-      ) {
-        core.info(
-          `Current user already approved pull request #${prNumber}, nothing to do`
-        );
-        return;
-      }
+    const outstandingReviewRequest = pr.requested_reviewers?.some(
+      (reviewer) => reviewer.login == login
+    );
+    if (alreadyReviewed && !outstandingReviewRequest) {
+      core.info(
+        `Current user already approved pull request #${prNumber}, nothing to do`
+      );
+      return;
     }
 
     core.info(
