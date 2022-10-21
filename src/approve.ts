@@ -52,7 +52,10 @@ export async function approve(
       if (
         review.user?.login == login &&
         review.commit_id == commit &&
-        review.state == "APPROVED"
+        review.state == "APPROVED" &&
+        !pull_request.data.requested_reviewers?.some(
+          (reviewer) => reviewer.login == login
+        )
       ) {
         core.info(
           `Current user already approved pull request #${prNumber}, nothing to do`

@@ -10070,7 +10070,7 @@ const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const request_error_1 = __nccwpck_require__(537);
 function approve(token, context, prNumber, reviewMessage) {
-    var _a, _b;
+    var _a, _b, _c;
     return __awaiter(this, void 0, void 0, function* () {
         if (!prNumber) {
             prNumber = (_a = context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
@@ -10102,7 +10102,8 @@ function approve(token, context, prNumber, reviewMessage) {
             for (const review of reviews.data) {
                 if (((_b = review.user) === null || _b === void 0 ? void 0 : _b.login) == login &&
                     review.commit_id == commit &&
-                    review.state == "APPROVED") {
+                    review.state == "APPROVED" &&
+                    !((_c = pull_request.data.requested_reviewers) === null || _c === void 0 ? void 0 : _c.some((reviewer) => reviewer.login == login))) {
                     core.info(`Current user already approved pull request #${prNumber}, nothing to do`);
                     return;
                 }
