@@ -10093,7 +10093,7 @@ function approve(token, context, prNumber, reviewMessage) {
             core.info(`Current user is ${login}`);
             const prHead = pr.head.sha;
             core.info(`Commit SHA is ${prHead}`);
-            const alreadyReviewed = reviews.some(({ user, commit_id, state }) => (user === null || user === void 0 ? void 0 : user.login) === login && commit_id == prHead && state === "APPROVED");
+            const alreadyReviewed = reviews.some(({ user, state }) => (user === null || user === void 0 ? void 0 : user.login) === login && state === "APPROVED");
             const outstandingReviewRequest = (_b = pr.requested_reviewers) === null || _b === void 0 ? void 0 : _b.some((reviewer) => reviewer.login == login);
             if (alreadyReviewed && !outstandingReviewRequest) {
                 core.info(`Current user already approved pull request #${prNumber}, nothing to do`);
