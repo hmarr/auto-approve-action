@@ -179,23 +179,6 @@ test("when a review is commented", async () => {
   expect(createReview.isDone()).toBe(true);
 });
 
-test("when an old commit has already been approved", async () => {
-  apiMocks.getUser();
-  apiMocks.getPull();
-  apiMocks.getReviews(200, [
-    {
-      user: { login: "hmarr" },
-      commit_id: "6a9ec7556f0a7fa5b49527a1eea4878b8a22d2e0",
-      state: "APPROVED",
-    },
-  ]);
-  const createReview = apiMocks.createReview();
-
-  await approve("gh-tok", ghContext());
-
-  expect(createReview.isDone()).toBe(true);
-});
-
 test("when a review has already been approved by another user", async () => {
   apiMocks.getUser();
   apiMocks.getPull();

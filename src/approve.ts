@@ -40,8 +40,7 @@ export async function approve(
     core.info(`Commit SHA is ${prHead}`);
 
     const alreadyReviewed = reviews.some(
-      ({ user, commit_id, state }) =>
-        user?.login === login && commit_id == prHead && state === "APPROVED"
+      ({ user, state }) => user?.login === login && state === "APPROVED"
     );
     const outstandingReviewRequest = pr.requested_reviewers?.some(
       (reviewer) => reviewer.login == login
