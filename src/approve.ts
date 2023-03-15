@@ -39,12 +39,19 @@ export async function approve(
     const prHead = pr.head.sha;
     core.info(`Commit SHA is ${prHead}`);
 
-    const alreadyReviewed = reviews.some(
-      ({ user, state }) => user?.login === login && state === "APPROVED"
-    );
+    // Only the most recent review for a user counts towards the review state
+    const latestReviewForUser = [...reviews]
+      .reverse()
+      .find(({ user }) => user?.login === login);
+    const alreadyReviewed = latestReviewForUser?.state === "APPROVED";
+
+    // If there's an approved review from a user, but there's an outstanding review request,
+    // we need to create a new review. Review requests mean that existing "APPROVED" reviews
+    // don't count towards the mergeability of the PR.
     const outstandingReviewRequest = pr.requested_reviewers?.some(
       (reviewer) => reviewer.login == login
     );
+
     if (alreadyReviewed && !outstandingReviewRequest) {
       core.info(
         `Current user already approved pull request #${prNumber}, nothing to do`
