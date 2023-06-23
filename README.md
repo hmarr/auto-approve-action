@@ -49,9 +49,10 @@ name: Auto approve
 
 on:
   workflow_dispatch:
-    inputs: pullRequestNumber
-      description: Pull request number to auto-approve
-      required: false
+    inputs: 
+      pullRequestNumber:
+        description: Pull request number to auto-approve
+        required: false
 
 jobs:
   auto-approve:
