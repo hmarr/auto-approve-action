@@ -4,12 +4,24 @@ import { RequestError } from "@octokit/request-error";
 import { Context } from "@actions/github/lib/context";
 import { GitHub } from "@actions/github/lib/utils";
 
-export async function approve(
-  token: string,
-  context: Context,
-  prNumber?: number,
-  reviewMessage?: string
-) {
+interface ApproveOptions {
+  token: string;
+  context: Context;
+  prNumber?: number;
+  reviewMessage?: string;
+
+  // This lets us use the native fetch function in tests. @actions/github swaps out
+  // the default fetch implementation with its own, which doesn't work with msw.
+  octokitOpts?: Parameters<typeof github.getOctokit>[1];
+}
+
+export async function approve({
+  token,
+  context,
+  prNumber,
+  reviewMessage,
+  octokitOpts,
+}: ApproveOptions): Promise<boolean> {
   if (!prNumber) {
     prNumber = context.payload.pull_request?.number;
   }
@@ -19,10 +31,10 @@ export async function approve(
       "Event payload missing `pull_request` key, and no `pull-request-number` provided as input." +
         "Make sure you're triggering this action on the `pull_request` or `pull_request_target` events."
     );
-    return;
+    return false;
   }
 
-  const client = github.getOctokit(token);
+  const client = github.getOctokit(token, octokitOpts);
 
   try {
     const { owner, repo } = context.repo;
@@ -56,7 +68,7 @@ export async function approve(
       core.info(
         `Current user already approved pull request #${prNumber}, nothing to do`
       );
-      return;
+      return false;
     }
 
     core.info(
@@ -104,7 +116,7 @@ export async function approve(
         default:
           core.setFailed(`Error (code ${error.status}): ${error.message}`);
       }
-      return;
+      return false;
     }
 
     if (error instanceof Error) {
@@ -112,8 +124,10 @@ export async function approve(
     } else {
       core.setFailed("Unknown error");
     }
-    return;
+    return false;
   }
+
+  return true;
 }
 
 async function getLoginForToken(

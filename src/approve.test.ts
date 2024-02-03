@@ -1,8 +1,8 @@
 import * as core from "@actions/core";
 import { Context } from "@actions/github/lib/context";
-import { create } from "domain";
-import nock from "nock";
 import { approve } from "./approve";
+import { HttpResponse, http } from "msw";
+import { setupServer } from "msw/node";
 
 const originalEnv = process.env;
 
@@ -10,34 +10,54 @@ beforeEach(() => {
   jest.restoreAllMocks();
   jest.spyOn(core, "setFailed").mockImplementation(jest.fn());
   jest.spyOn(core, "info").mockImplementation(jest.fn());
-  nock.disableNetConnect();
 
   process.env = { GITHUB_REPOSITORY: "hmarr/test" };
 });
 
 afterEach(() => {
-  nock.cleanAll();
-  nock.enableNetConnect();
   process.env = originalEnv;
 });
 
-const apiNock = nock("https://api.github.com");
+const mockServer = setupServer();
+beforeAll(() => mockServer.listen({ onUnhandledRequest: "error" }));
+afterEach(() => mockServer.resetHandlers());
+afterAll(() => mockServer.close());
+
+function mockOctokit(
+  method: "get" | "post" | "put" | "delete",
+  path: string,
+  status: number,
+  body: any
+) {
+  let isDone = false;
+  mockServer.use(
+    http[method](`https://api.github.com${path}`, () => {
+      isDone = true;
+      return HttpResponse.json(body, { status: status ?? 200 });
+    })
+  );
+  return { isDone: () => isDone };
+}
+
 const apiMocks = {
   getUser: (status?: number, body?: object) =>
-    apiNock.get("/user").reply(status ?? 200, body ?? { login: "hmarr" }),
+    mockOctokit("get", "/user", status ?? 200, body ?? { login: "hmarr" }),
   getPull: (status?: number, body?: object) =>
-    apiNock
-      .get("/repos/hmarr/test/pulls/101")
-      .reply(
-        status ?? 200,
-        body ?? { head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" } }
-      ),
+    mockOctokit(
+      "get",
+      "/repos/hmarr/test/pulls/101",
+      status ?? 200,
+      body ?? { head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" } }
+    ),
   getReviews: (status?: number, body?: any) =>
-    apiNock
-      .get("/repos/hmarr/test/pulls/101/reviews")
-      .reply(status ?? 200, body ?? []),
+    mockOctokit(
+      "get",
+      "/repos/hmarr/test/pulls/101/reviews",
+      status ?? 200,
+      body ?? []
+    ),
   createReview: () =>
-    apiNock.post("/repos/hmarr/test/pulls/101/reviews").reply(200, {}),
+    mockOctokit("post", "/repos/hmarr/test/pulls/101/reviews", 200, {}),
 };
 
 test("a review is successfully created with a PAT", async () => {
@@ -46,8 +66,13 @@ test("a review is successfully created with a PAT", async () => {
   apiMocks.getReviews();
   const createReview = apiMocks.createReview();
 
-  await approve("gh-tok", ghContext());
-
+  expect(
+    await approve({
+      token: "gh-tok",
+      context: ghContext(),
+      octokitOpts: { request: fetch },
+    })
+  ).toBeTruthy();
   expect(createReview.isDone()).toBe(true);
 });
 
@@ -57,8 +82,13 @@ test("a review is successfully created with an Actions token", async () => {
   apiMocks.getReviews();
   const createReview = apiMocks.createReview();
 
-  await approve("gh-tok", ghContext());
-
+  expect(
+    await approve({
+      token: "gh-tok",
+      context: ghContext(),
+      octokitOpts: { request: fetch },
+    })
+  ).toBeTruthy();
   expect(createReview.isDone()).toBe(true);
 });
 
@@ -68,23 +98,39 @@ test("when a review is successfully created with message", async () => {
   apiMocks.getReviews();
   const createReview = apiMocks.createReview();
 
-  await approve("gh-tok", ghContext(), undefined, "Review body");
-
+  expect(
+    await approve({
+      token: "gh-tok",
+      context: ghContext(),
+      reviewMessage: "Review body",
+      octokitOpts: { request: fetch },
+    })
+  ).toBeTruthy();
   expect(createReview.isDone()).toBe(true);
 });
 
 test("when a review is successfully created using pull-request-number", async () => {
   apiMocks.getUser();
-  apiNock
-    .get("/repos/hmarr/test/pulls/102")
-    .reply(200, { head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" } });
-  apiNock.get("/repos/hmarr/test/pulls/102/reviews").reply(200, []);
+  mockOctokit("get", "/repos/hmarr/test/pulls/102", 200, {
+    head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" },
+  });
+  mockOctokit("get", "/repos/hmarr/test/pulls/102/reviews", 200, []);
 
-  const createReview = apiNock
-    .post("/repos/hmarr/test/pulls/102/reviews")
-    .reply(200, { id: 1 });
+  const createReview = mockOctokit(
+    "post",
+    "/repos/hmarr/test/pulls/102/reviews",
+    200,
+    { id: 1 }
+  );
 
-  await approve("gh-tok", new Context(), 102);
+  expect(
+    await approve({
+      token: "gh-tok",
+      context: ghContext(),
+      prNumber: 102,
+      octokitOpts: { request: fetch },
+    })
+  ).toBeTruthy();
 
   expect(createReview.isDone()).toBe(true);
 });
@@ -101,7 +147,13 @@ test("when a review has already been approved by current user", async () => {
   ]);
   const createReview = apiMocks.createReview();
 
-  await approve("gh-tok", ghContext());
+  expect(
+    await approve({
+      token: "gh-tok",
+      context: ghContext(),
+      octokitOpts: { request: fetch },
+    })
+  ).toBeFalsy();
 
   expect(createReview.isDone()).toBe(false);
   expect(core.info).toHaveBeenCalledWith(
@@ -123,8 +175,14 @@ test("when a review is pending", async () => {
   ]);
   const createReview = apiMocks.createReview();
 
-  await approve("gh-tok", new Context(), 101);
-
+  expect(
+    await approve({
+      token: "gh-tok",
+      context: ghContext(),
+      prNumber: 101,
+      octokitOpts: { request: fetch },
+    })
+  ).toBeTruthy();
   expect(createReview.isDone()).toBe(true);
 });
 
@@ -140,8 +198,14 @@ test("when a review is dismissed", async () => {
   ]);
   const createReview = apiMocks.createReview();
 
-  await approve("gh-tok", new Context(), 101);
-
+  expect(
+    await approve({
+      token: "gh-tok",
+      context: ghContext(),
+      prNumber: 101,
+      octokitOpts: { request: fetch },
+    })
+  ).toBeTruthy();
   expect(createReview.isDone()).toBe(true);
 });
 
@@ -162,8 +226,14 @@ test("when a review is dismissed, but an earlier review is approved", async () =
   ]);
   const createReview = apiMocks.createReview();
 
-  await approve("gh-tok", new Context(), 101);
-
+  expect(
+    await approve({
+      token: "gh-tok",
+      context: ghContext(),
+      prNumber: 101,
+      octokitOpts: { request: fetch },
+    })
+  ).toBeTruthy();
   expect(createReview.isDone()).toBe(true);
 });
 
@@ -179,8 +249,14 @@ test("when a review is not approved", async () => {
   ]);
   const createReview = apiMocks.createReview();
 
-  await approve("gh-tok", new Context(), 101);
-
+  expect(
+    await approve({
+      token: "gh-tok",
+      context: ghContext(),
+      prNumber: 101,
+      octokitOpts: { request: fetch },
+    })
+  ).toBeTruthy();
   expect(createReview.isDone()).toBe(true);
 });
 
@@ -196,8 +272,14 @@ test("when a review is commented", async () => {
   ]);
   const createReview = apiMocks.createReview();
 
-  await approve("gh-tok", new Context(), 101);
-
+  expect(
+    await approve({
+      token: "gh-tok",
+      context: ghContext(),
+      prNumber: 101,
+      octokitOpts: { request: fetch },
+    })
+  ).toBeTruthy();
   expect(createReview.isDone()).toBe(true);
 });
 
@@ -213,8 +295,14 @@ test("when a review has already been approved by another user", async () => {
   ]);
   const createReview = apiMocks.createReview();
 
-  await approve("gh-tok", new Context(), 101);
-
+  expect(
+    await approve({
+      token: "gh-tok",
+      context: ghContext(),
+      prNumber: 101,
+      octokitOpts: { request: fetch },
+    })
+  ).toBeTruthy();
   expect(createReview.isDone()).toBe(true);
 });
 
@@ -230,8 +318,14 @@ test("when a review has already been approved by unknown user", async () => {
   ]);
   const createReview = apiMocks.createReview();
 
-  await approve("gh-tok", new Context(), 101);
-
+  expect(
+    await approve({
+      token: "gh-tok",
+      context: ghContext(),
+      prNumber: 101,
+      octokitOpts: { request: fetch },
+    })
+  ).toBeTruthy();
   expect(createReview.isDone()).toBe(true);
 });
 
@@ -251,15 +345,26 @@ test("when a review has been previously approved by user and but requests a re-r
 
   const createReview = apiMocks.createReview();
 
-  await approve("gh-tok", new Context(), 101);
-
+  expect(
+    await approve({
+      token: "gh-tok",
+      context: ghContext(),
+      prNumber: 101,
+      octokitOpts: { request: fetch },
+    })
+  ).toBeTruthy();
   expect(createReview.isDone()).toBe(true);
 });
 
 test("without a pull request", async () => {
   const createReview = apiMocks.createReview();
-  await approve("gh-tok", new Context());
-
+  expect(
+    await approve({
+      token: "gh-tok",
+      context: new Context(),
+      octokitOpts: { request: fetch },
+    })
+  ).toBeFalsy();
   expect(createReview.isDone()).toBe(false);
   expect(core.setFailed).toHaveBeenCalledWith(
     expect.stringContaining("Make sure you're triggering this")
@@ -272,8 +377,13 @@ test("when the token is invalid", async () => {
   apiMocks.getReviews(401, { message: "Bad credentials" });
   const createReview = apiMocks.createReview();
 
-  await approve("gh-tok", ghContext());
-
+  expect(
+    await approve({
+      token: "gh-tok",
+      context: ghContext(),
+      octokitOpts: { request: fetch },
+    })
+  ).toBeFalsy();
   expect(createReview.isDone()).toBe(false);
   expect(core.setFailed).toHaveBeenCalledWith(
     expect.stringContaining("`github-token` input parameter")
@@ -284,12 +394,17 @@ test("when the token doesn't have write permissions", async () => {
   apiMocks.getUser();
   apiMocks.getPull();
   apiMocks.getReviews();
-  apiNock
-    .post("/repos/hmarr/test/pulls/101/reviews")
-    .reply(403, { message: "Resource not accessible by integration" });
+  mockOctokit("post", "/repos/hmarr/test/pulls/101/reviews", 403, {
+    message: "Resource not accessible by integration",
+  });
 
-  await approve("gh-tok", ghContext());
-
+  expect(
+    await approve({
+      token: "gh-tok",
+      context: ghContext(),
+      octokitOpts: { request: fetch },
+    })
+  ).toBeFalsy();
   expect(core.setFailed).toHaveBeenCalledWith(
     expect.stringContaining("pull_request_target")
   );
@@ -299,12 +414,17 @@ test("when a user tries to approve their own pull request", async () => {
   apiMocks.getUser();
   apiMocks.getPull();
   apiMocks.getReviews();
-  apiNock
-    .post("/repos/hmarr/test/pulls/101/reviews")
-    .reply(422, { message: "Unprocessable Entity" });
+  mockOctokit("post", "/repos/hmarr/test/pulls/101/reviews", 422, {
+    message: "Unprocessable Entity",
+  });
 
-  await approve("gh-tok", ghContext());
-
+  expect(
+    await approve({
+      token: "gh-tok",
+      context: ghContext(),
+      octokitOpts: { request: fetch },
+    })
+  ).toBeFalsy();
   expect(core.setFailed).toHaveBeenCalledWith(
     expect.stringContaining("same user account")
   );
@@ -316,8 +436,13 @@ test("when pull request does not exist or the token doesn't have access", async 
   apiMocks.getReviews(404, { message: "Not Found" });
   const createReview = apiMocks.createReview();
 
-  await approve("gh-tok", ghContext());
-
+  expect(
+    await approve({
+      token: "gh-tok",
+      context: ghContext(),
+      octokitOpts: { request: fetch },
+    })
+  ).toBeFalsy();
   expect(createReview.isDone()).toBe(false);
   expect(core.setFailed).toHaveBeenCalledWith(
     expect.stringContaining("doesn't have access")
@@ -328,12 +453,17 @@ test("when the token is read-only", async () => {
   apiMocks.getUser();
   apiMocks.getPull();
   apiMocks.getReviews();
-  apiNock
-    .post("/repos/hmarr/test/pulls/101/reviews")
-    .reply(403, { message: "Not Authorized" });
+  mockOctokit("post", "/repos/hmarr/test/pulls/101/reviews", 403, {
+    message: "Not Authorized",
+  });
 
-  await approve("gh-tok", ghContext());
-
+  expect(
+    await approve({
+      token: "gh-tok",
+      context: ghContext(),
+      octokitOpts: { request: fetch },
+    })
+  ).toBeFalsy();
   expect(core.setFailed).toHaveBeenCalledWith(
     expect.stringContaining("are read-only")
   );
@@ -343,12 +473,17 @@ test("when the token doesn't have write access to the repository", async () => {
   apiMocks.getUser();
   apiMocks.getPull();
   apiMocks.getReviews();
-  apiNock
-    .post("/repos/hmarr/test/pulls/101/reviews")
-    .reply(404, { message: "Not Found" });
+  mockOctokit("post", "/repos/hmarr/test/pulls/101/reviews", 404, {
+    message: "Not Found",
+  });
 
-  await approve("gh-tok", ghContext());
-
+  expect(
+    await approve({
+      token: "gh-tok",
+      context: ghContext(),
+      octokitOpts: { request: fetch },
+    })
+  ).toBeFalsy();
   expect(core.setFailed).toHaveBeenCalledWith(
     expect.stringContaining("doesn't have access")
   );
