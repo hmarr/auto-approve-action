@@ -27,14 +27,14 @@ function mockOctokit(
   method: "get" | "post" | "put" | "delete",
   path: string,
   status: number,
-  body: any
+  body: any,
 ) {
   let isDone = false;
   mockServer.use(
     http[method](`https://api.github.com${path}`, () => {
       isDone = true;
       return HttpResponse.json(body, { status: status ?? 200 });
-    })
+    }),
   );
   return { isDone: () => isDone };
 }
@@ -47,14 +47,14 @@ const apiMocks = {
       "get",
       "/repos/hmarr/test/pulls/101",
       status ?? 200,
-      body ?? { head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" } }
+      body ?? { head: { sha: "24c5451bbf1fb09caa3ac8024df4788aff4d4974" } },
     ),
   getReviews: (status?: number, body?: any) =>
     mockOctokit(
       "get",
       "/repos/hmarr/test/pulls/101/reviews",
       status ?? 200,
-      body ?? []
+      body ?? [],
     ),
   createReview: () =>
     mockOctokit("post", "/repos/hmarr/test/pulls/101/reviews", 200, {}),
@@ -71,7 +71,7 @@ test("a review is successfully created with a PAT", async () => {
       token: "gh-tok",
       context: ghContext(),
       octokitOpts: { request: fetch },
-    })
+    }),
   ).toBeTruthy();
   expect(createReview.isDone()).toBe(true);
 });
@@ -87,7 +87,7 @@ test("a review is successfully created with an Actions token", async () => {
       token: "gh-tok",
       context: ghContext(),
       octokitOpts: { request: fetch },
-    })
+    }),
   ).toBeTruthy();
   expect(createReview.isDone()).toBe(true);
 });
@@ -104,7 +104,7 @@ test("when a review is successfully created with message", async () => {
       context: ghContext(),
       reviewMessage: "Review body",
       octokitOpts: { request: fetch },
-    })
+    }),
   ).toBeTruthy();
   expect(createReview.isDone()).toBe(true);
 });
@@ -120,7 +120,7 @@ test("when a review is successfully created using pull-request-number", async ()
     "post",
     "/repos/hmarr/test/pulls/102/reviews",
     200,
-    { id: 1 }
+    { id: 1 },
   );
 
   expect(
@@ -129,7 +129,7 @@ test("when a review is successfully created using pull-request-number", async ()
       context: ghContext(),
       prNumber: 102,
       octokitOpts: { request: fetch },
-    })
+    }),
   ).toBeTruthy();
 
   expect(createReview.isDone()).toBe(true);
@@ -152,14 +152,14 @@ test("when a review has already been approved by current user", async () => {
       token: "gh-tok",
       context: ghContext(),
       octokitOpts: { request: fetch },
-    })
+    }),
   ).toBeFalsy();
 
   expect(createReview.isDone()).toBe(false);
   expect(core.info).toHaveBeenCalledWith(
     expect.stringContaining(
-      "Current user already approved pull request #101, nothing to do"
-    )
+      "Current user already approved pull request #101, nothing to do",
+    ),
   );
 });
 
@@ -181,7 +181,7 @@ test("when a review is pending", async () => {
       context: ghContext(),
       prNumber: 101,
       octokitOpts: { request: fetch },
-    })
+    }),
   ).toBeTruthy();
   expect(createReview.isDone()).toBe(true);
 });
@@ -204,7 +204,7 @@ test("when a review is dismissed", async () => {
       context: ghContext(),
       prNumber: 101,
       octokitOpts: { request: fetch },
-    })
+    }),
   ).toBeTruthy();
   expect(createReview.isDone()).toBe(true);
 });
@@ -232,7 +232,7 @@ test("when a review is dismissed, but an earlier review is approved", async () =
       context: ghContext(),
       prNumber: 101,
       octokitOpts: { request: fetch },
-    })
+    }),
   ).toBeTruthy();
   expect(createReview.isDone()).toBe(true);
 });
@@ -255,7 +255,7 @@ test("when a review is not approved", async () => {
       context: ghContext(),
       prNumber: 101,
       octokitOpts: { request: fetch },
-    })
+    }),
   ).toBeTruthy();
   expect(createReview.isDone()).toBe(true);
 });
@@ -278,7 +278,7 @@ test("when a review is commented", async () => {
       context: ghContext(),
       prNumber: 101,
       octokitOpts: { request: fetch },
-    })
+    }),
   ).toBeTruthy();
   expect(createReview.isDone()).toBe(true);
 });
@@ -301,7 +301,7 @@ test("when a review has already been approved by another user", async () => {
       context: ghContext(),
       prNumber: 101,
       octokitOpts: { request: fetch },
-    })
+    }),
   ).toBeTruthy();
   expect(createReview.isDone()).toBe(true);
 });
@@ -324,7 +324,7 @@ test("when a review has already been approved by unknown user", async () => {
       context: ghContext(),
       prNumber: 101,
       octokitOpts: { request: fetch },
-    })
+    }),
   ).toBeTruthy();
   expect(createReview.isDone()).toBe(true);
 });
@@ -351,7 +351,7 @@ test("when a review has been previously approved by user and but requests a re-r
       context: ghContext(),
       prNumber: 101,
       octokitOpts: { request: fetch },
-    })
+    }),
   ).toBeTruthy();
   expect(createReview.isDone()).toBe(true);
 });
@@ -363,11 +363,11 @@ test("without a pull request", async () => {
       token: "gh-tok",
       context: new Context(),
       octokitOpts: { request: fetch },
-    })
+    }),
   ).toBeFalsy();
   expect(createReview.isDone()).toBe(false);
   expect(core.setFailed).toHaveBeenCalledWith(
-    expect.stringContaining("Make sure you're triggering this")
+    expect.stringContaining("Make sure you're triggering this"),
   );
 });
 
@@ -382,11 +382,11 @@ test("when the token is invalid", async () => {
       token: "gh-tok",
       context: ghContext(),
       octokitOpts: { request: fetch },
-    })
+    }),
   ).toBeFalsy();
   expect(createReview.isDone()).toBe(false);
   expect(core.setFailed).toHaveBeenCalledWith(
-    expect.stringContaining("`github-token` input parameter")
+    expect.stringContaining("`github-token` input parameter"),
   );
 });
 
@@ -403,10 +403,10 @@ test("when the token doesn't have write permissions", async () => {
       token: "gh-tok",
       context: ghContext(),
       octokitOpts: { request: fetch },
-    })
+    }),
   ).toBeFalsy();
   expect(core.setFailed).toHaveBeenCalledWith(
-    expect.stringContaining("pull_request_target")
+    expect.stringContaining("pull_request_target"),
   );
 });
 
@@ -423,10 +423,10 @@ test("when a user tries to approve their own pull request", async () => {
       token: "gh-tok",
       context: ghContext(),
       octokitOpts: { request: fetch },
-    })
+    }),
   ).toBeFalsy();
   expect(core.setFailed).toHaveBeenCalledWith(
-    expect.stringContaining("same user account")
+    expect.stringContaining("same user account"),
   );
 });
 
@@ -441,11 +441,11 @@ test("when pull request does not exist or the token doesn't have access", async 
       token: "gh-tok",
       context: ghContext(),
       octokitOpts: { request: fetch },
-    })
+    }),
   ).toBeFalsy();
   expect(createReview.isDone()).toBe(false);
   expect(core.setFailed).toHaveBeenCalledWith(
-    expect.stringContaining("doesn't have access")
+    expect.stringContaining("doesn't have access"),
   );
 });
 
@@ -462,10 +462,10 @@ test("when the token is read-only", async () => {
       token: "gh-tok",
       context: ghContext(),
       octokitOpts: { request: fetch },
-    })
+    }),
   ).toBeFalsy();
   expect(core.setFailed).toHaveBeenCalledWith(
-    expect.stringContaining("are read-only")
+    expect.stringContaining("are read-only"),
   );
 });
 
@@ -482,10 +482,10 @@ test("when the token doesn't have write access to the repository", async () => {
       token: "gh-tok",
       context: ghContext(),
       octokitOpts: { request: fetch },
-    })
+    }),
   ).toBeFalsy();
   expect(core.setFailed).toHaveBeenCalledWith(
-    expect.stringContaining("doesn't have access")
+    expect.stringContaining("doesn't have access"),
   );
 });
 
